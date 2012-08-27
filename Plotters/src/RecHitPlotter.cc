@@ -125,10 +125,10 @@ RecHitPlotter::process_calo(const edm::Event& event,
 void
 RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 {
-   auto p_ecal = process_calo<EcalRecHit, EBDetId>(event, ecalHits_,
-         ecal_en_, ecal_mp_);
-   auto p_hcal = process_calo<HBHERecHit, HcalDetId>(event, hcalHits_,
-         hcal_en_, hcal_mp_);
+   std::pair<double, double> p_ecal = process_calo<EcalRecHit, EBDetId>(
+         event, ecalHits_, ecal_en_, ecal_mp_);
+   std::pair<double, double> p_hcal = process_calo<HBHERecHit, HcalDetId>(
+         event, hcalHits_, hcal_en_, hcal_mp_);
 
    event_details_->Fill(p_ecal.first, p_ecal.second,
          p_hcal.first, p_hcal.second);

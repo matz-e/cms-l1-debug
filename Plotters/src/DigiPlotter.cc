@@ -85,7 +85,8 @@ DigiPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          "Can't find ecal digi collection with tag '" <<
          ecal_digis_ << "'" << std::endl;
    } else {
-      for (auto digi = e_digis->begin(); digi != e_digis->end(); ++digi) {
+      for (EBDigiCollection::const_iterator digi = e_digis->begin();
+            digi != e_digis->end(); ++digi) {
          EBDataFrame df(*digi);
          float digi_vals[10];
 
@@ -104,7 +105,8 @@ DigiPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          "Can't find hcal digi collection with tag '" <<
          hcal_digis_ << "'" << std::endl;
    } else {
-      for (auto digi = h_digis->begin(); digi != h_digis->end(); ++digi) {
+      SortedCollection<HBHEDataFrame>::const_iterator digi;
+      for (digi = h_digis->begin(); digi != h_digis->end(); ++digi) {
          float digi_vals[10];
 
          for (int i = 0; i < digi->size(); ++i) {

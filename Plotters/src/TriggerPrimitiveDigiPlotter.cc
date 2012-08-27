@@ -24,6 +24,7 @@
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/ESHandle.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
@@ -33,6 +34,7 @@
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
 #include "DataFormats/Common/interface/SortedCollection.h"
+#include "DataFormats/EcalDigi/interface/EcalDigiCollections.h"
 #include "DataFormats/EcalDigi/interface/EcalTriggerPrimitiveDigi.h"
 #include "DataFormats/HcalDigi/interface/HcalTriggerPrimitiveDigi.h"
 
@@ -79,14 +81,14 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
 
    float digis[6];
 
-   Handle< SortedCollection<EcalTriggerPrimitiveDigi> > ecal_handle_;
+   Handle<EcalTrigPrimDigiCollection> ecal_handle_;
    if (!event.getByLabel(ecal_digis_, ecal_handle_)) {
       LogError("TriggerPrimitiveDigiPlotter") <<
          "Can't find ecal trigger primitive digi collection with tag '" <<
          ecal_digis_ << "'" << std::endl;
    } else {
-      for (auto primitive = ecal_handle_->begin(); primitive != ecal_handle_->end();
-            ++primitive) {
+      for (EcalTrigPrimDigiCollection::const_iterator primitive = ecal_handle_->begin();
+            primitive != ecal_handle_->end(); ++primitive) {
          digis[0] = primitive->compressedEt();
          for (int i = 0; i < primitive->size(); ++i)
             digis[i + 1] = primitive->sample(i).compressedEt();
@@ -102,7 +104,8 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
    } else {
       std::cerr << hcal_digis_ << std::endl;
       std::cerr << hcal_handle_->size() << std::endl;
-      for (auto primitive = hcal_handle_->begin(); primitive != hcal_handle_->end();
+      SortedCollection<HcalTriggerPrimitiveDigi>::const_iterator primitive;
+      for (primitive = hcal_handle_->begin(); primitive != hcal_handle_->end();
             ++primitive) {
          digis[0] = primitive->SOI_compressedEt();
          for (int i = 0; i < primitive->size(); ++i)
