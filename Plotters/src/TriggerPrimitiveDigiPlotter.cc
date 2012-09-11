@@ -128,8 +128,8 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
          tpl_h_digis_->Fill(digis);
 
          HcalTrigTowerDetId id = primitive->id();
-         h_ecal_adc_->Fill(id.ieta(), id.iphi(), primitive->SOI_compressedEt());
-         h_ecal_mp_->Fill(id.ieta(), id.iphi());
+         h_hcal_adc_->Fill(id.ieta(), id.iphi(), primitive->SOI_compressedEt());
+         h_hcal_mp_->Fill(id.ieta(), id.iphi());
       }
    }
 }
