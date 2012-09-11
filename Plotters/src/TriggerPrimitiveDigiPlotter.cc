@@ -36,8 +36,11 @@
 #include "DataFormats/Common/interface/SortedCollection.h"
 #include "DataFormats/EcalDigi/interface/EcalDigiCollections.h"
 #include "DataFormats/EcalDigi/interface/EcalTriggerPrimitiveDigi.h"
+#include "DataFormats/EcalDetId/interface/EcalTrigTowerDetId.h"
 #include "DataFormats/HcalDigi/interface/HcalTriggerPrimitiveDigi.h"
+#include "DataFormats/HcalDetId/interface/HcalTrigTowerDetId.h"
 
+#include "TH2D.h"
 #include "TNtuple.h"
 //
 // class declaration
@@ -60,6 +63,11 @@ class TriggerPrimitiveDigiPlotter : public edm::EDAnalyzer {
 
       TNtuple *tpl_e_digis_;
       TNtuple *tpl_h_digis_;
+
+      TH2D *h_ecal_adc_;
+      TH2D *h_ecal_mp_;
+      TH2D *h_hcal_adc_;
+      TH2D *h_hcal_mp_;
 };
 
 TriggerPrimitiveDigiPlotter::TriggerPrimitiveDigiPlotter(const edm::ParameterSet& config) :
@@ -70,6 +78,11 @@ TriggerPrimitiveDigiPlotter::TriggerPrimitiveDigiPlotter(const edm::ParameterSet
    edm::Service<TFileService> fs;
    tpl_e_digis_ = fs->make<TNtuple>("ecal_trigger_digis", "", "e_soi:e0:e1:e2:e3:e4");
    tpl_h_digis_ = fs->make<TNtuple>("hcal_trigger_digis", "", "h_soi:h0:h1:h2:h3:h4");
+
+   h_ecal_adc_ = fs->make<TH2D>("ecal_soi_adc", "", 57, -28.5, 28.5, 72, 0.5, 72.5);
+   h_ecal_mp_  = fs->make<TH2D>("ecal_soi_mp", "", 57, -28.5, 28.5, 72, 0.5, 72.5);
+   h_hcal_adc_ = fs->make<TH2D>("hcal_soi_adc", "", 65, -32.5, 32.5, 72, 0.5, 72.5);
+   h_hcal_mp_  = fs->make<TH2D>("hcal_soi_mp", "", 65, -32.5, 32.5, 72, 0.5, 72.5);
 }
 
 TriggerPrimitiveDigiPlotter::~TriggerPrimitiveDigiPlotter() {}
@@ -93,6 +106,10 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
          for (int i = 0; i < primitive->size(); ++i)
             digis[i + 1] = primitive->sample(i).compressedEt();
          tpl_e_digis_->Fill(digis);
+
+         EcalTrigTowerDetId id = primitive->id();
+         h_ecal_adc_->Fill(id.ieta(), id.iphi(), primitive->compressedEt());
+         h_ecal_mp_->Fill(id.ieta(), id.iphi());
       }
    }
 
@@ -102,8 +119,6 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
          "Can't find hcal trigger primitive digi collection with tag '" <<
          hcal_digis_ << "'" << std::endl;
    } else {
-      std::cerr << hcal_digis_ << std::endl;
-      std::cerr << hcal_handle_->size() << std::endl;
       SortedCollection<HcalTriggerPrimitiveDigi>::const_iterator primitive;
       for (primitive = hcal_handle_->begin(); primitive != hcal_handle_->end();
             ++primitive) {
@@ -111,6 +126,10 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
          for (int i = 0; i < primitive->size(); ++i)
             digis[i + 1] = primitive->sample(i).compressedEt();
          tpl_h_digis_->Fill(digis);
+
+         HcalTrigTowerDetId id = primitive->id();
+         h_ecal_adc_->Fill(id.ieta(), id.iphi(), primitive->SOI_compressedEt());
+         h_ecal_mp_->Fill(id.ieta(), id.iphi());
       }
    }
 }
