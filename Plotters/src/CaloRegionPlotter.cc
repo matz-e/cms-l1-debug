@@ -99,7 +99,6 @@ CaloRegionPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup
    } else {
       for (L1CaloRegionCollection::const_iterator r = regions->begin();
             r != regions->end(); ++r) {
-         std::cout << "::: " << r->gctEta() << " " << r->gctPhi() << std::endl;
          et_tot += r->et();
 
          h_calo_et_->Fill(r->gctEta(), r->gctPhi(), weight * r->et());
