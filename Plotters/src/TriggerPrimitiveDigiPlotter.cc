@@ -40,13 +40,15 @@
 #include "DataFormats/HcalDigi/interface/HcalTriggerPrimitiveDigi.h"
 #include "DataFormats/HcalDetId/interface/HcalTrigTowerDetId.h"
 
+#include "Debug/Plotters/interface/BasePlotter.h"
+
 #include "TH2D.h"
 #include "TNtuple.h"
 //
 // class declaration
 //
 
-class TriggerPrimitiveDigiPlotter : public edm::EDAnalyzer {
+class TriggerPrimitiveDigiPlotter : public edm::EDAnalyzer, BasePlotter {
    public:
       explicit TriggerPrimitiveDigiPlotter(const edm::ParameterSet&);
       ~TriggerPrimitiveDigiPlotter();
@@ -72,12 +74,13 @@ class TriggerPrimitiveDigiPlotter : public edm::EDAnalyzer {
 
 TriggerPrimitiveDigiPlotter::TriggerPrimitiveDigiPlotter(const edm::ParameterSet& config) :
    edm::EDAnalyzer(),
+   BasePlotter(config),
    ecal_digis_(config.getParameter<edm::InputTag>("ecalDigis")),
    hcal_digis_(config.getParameter<edm::InputTag>("hcalDigis"))
 {
    edm::Service<TFileService> fs;
-   tpl_e_digis_ = fs->make<TNtuple>("ecal_trigger_digis", "", "e_soi:e0:e1:e2:e3:e4");
-   tpl_h_digis_ = fs->make<TNtuple>("hcal_trigger_digis", "", "h_soi:h0:h1:h2:h3:h4");
+   tpl_e_digis_ = fs->make<TNtuple>("ecal_trigger_digis", "", "e_soi:e0:e1:e2:e3:e4:weight");
+   tpl_h_digis_ = fs->make<TNtuple>("hcal_trigger_digis", "", "h_soi:h0:h1:h2:h3:h4:weight");
 
    h_ecal_adc_ = fs->make<TH2D>("ecal_soi_adc", "", 57, -28.5, 28.5, 72, 0.5, 72.5);
    h_ecal_mp_  = fs->make<TH2D>("ecal_soi_mp", "", 57, -28.5, 28.5, 72, 0.5, 72.5);
@@ -92,7 +95,8 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
 {
    using namespace edm;
 
-   float digis[6];
+   float digis[7];
+   digis[6] = this->weight(event);
 
    Handle<EcalTrigPrimDigiCollection> ecal_handle_;
    if (!event.getByLabel(ecal_digis_, ecal_handle_)) {
