@@ -10,7 +10,9 @@
 <use name="DataFormats/HcalDetId"/>
 <use name="DataFormats/HcalDigi"/>
 <use name="DataFormats/HcalRecHit"/>
+<use name="DataFormats/L1CaloTrigger"/>
 <use name="DataFormats/TrackReco"/>
 <use name="DataFormats/VertexReco"/>
+<use name="PhysicsTools/Utilities"/>
 <use name="boost"/>
 <flags EDM_PLUGIN="1"/>

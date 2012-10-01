@@ -35,12 +35,14 @@
 #include "DataFormats/EcalDigi/interface/EcalDigiCollections.h"
 #include "DataFormats/HcalDigi/interface/HBHEDataFrame.h"
 
+#include "Debug/Plotters/interface/BasePlotter.h"
+
 #include "TNtuple.h"
 //
 // class declaration
 //
 
-class DigiPlotter : public edm::EDAnalyzer {
+class DigiPlotter : public edm::EDAnalyzer, BasePlotter {
    public:
       explicit DigiPlotter(const edm::ParameterSet&);
       ~DigiPlotter();
@@ -61,14 +63,15 @@ class DigiPlotter : public edm::EDAnalyzer {
 
 DigiPlotter::DigiPlotter(const edm::ParameterSet& config) :
    edm::EDAnalyzer(),
+   BasePlotter(config),
    ecal_digis_(config.getParameter<edm::InputTag>("ecalDigis")),
    hcal_digis_(config.getParameter<edm::InputTag>("hcalDigis"))
 {
    edm::Service<TFileService> fs;
    tpl_e_digis_ = fs->make<TNtuple>("ecal_digis", "",
-         "e0:e1:e2:e3:e4:e5:e6:e7:e8:e9");
+         "e0:e1:e2:e3:e4:e5:e6:e7:e8:e9:weight");
    tpl_h_digis_ = fs->make<TNtuple>("hcal_digis", "",
-         "d0:d1:d2:d3:d4:d5:d6:d7:d8:d9");
+         "d0:d1:d2:d3:d4:d5:d6:d7:d8:d9:weight");
 }
 
 
@@ -88,7 +91,8 @@ DigiPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       for (EBDigiCollection::const_iterator digi = e_digis->begin();
             digi != e_digis->end(); ++digi) {
          EBDataFrame df(*digi);
-         float digi_vals[10];
+         float digi_vals[11];
+         digi_vals[10] = this->weight(event);
 
          for (unsigned int i = 0; i < digi->size(); ++i) {
             EcalMGPASample sample(df.sample(i));
@@ -107,7 +111,8 @@ DigiPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    } else {
       SortedCollection<HBHEDataFrame>::const_iterator digi;
       for (digi = h_digis->begin(); digi != h_digis->end(); ++digi) {
-         float digi_vals[10];
+         float digi_vals[11];
+         digi_vals[10] = this->weight(event);
 
          for (int i = 0; i < digi->size(); ++i) {
             HcalQIESample sample(digi->sample(i));

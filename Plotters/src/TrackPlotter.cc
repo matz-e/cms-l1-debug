@@ -37,6 +37,8 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 
+#include "Debug/Plotters/interface/BasePlotter.h"
+
 #include "TH2D.h"
 #include "TNtuple.h"
 
@@ -44,7 +46,7 @@
 // class declaration
 //
 
-class TrackPlotter : public edm::EDAnalyzer {
+class TrackPlotter : public edm::EDAnalyzer, BasePlotter {
    public:
       explicit TrackPlotter(const edm::ParameterSet&);
       ~TrackPlotter();
@@ -67,9 +69,10 @@ class TrackPlotter : public edm::EDAnalyzer {
       edm::InputTag vertexSrc_;
 };
 
-TrackPlotter::TrackPlotter(const edm::ParameterSet& iConfig) :
+TrackPlotter::TrackPlotter(const edm::ParameterSet& config) :
    edm::EDAnalyzer(),
-   vertexSrc_(iConfig.getParameter<edm::InputTag>("vertexSrc"))
+   BasePlotter(config),
+   vertexSrc_(config.getParameter<edm::InputTag>("vertexSrc"))
 {
    edm::Service<TFileService> fs;
    track_en_ = fs->make<TH2D>("track_en", "Pt of tracks",
@@ -78,7 +81,7 @@ TrackPlotter::TrackPlotter(const edm::ParameterSet& iConfig) :
          40, -3.2, 3.2, 40, -3.2, 3.2);
 
    event_details_ = fs->make<TNtuple>("event_detail", "",
-         "n_vert:n_track:pt_tot");
+         "weight:n_vert:n_track:pt_tot");
 }
 
 TrackPlotter::~TrackPlotter() {}
@@ -86,10 +89,6 @@ TrackPlotter::~TrackPlotter() {}
 void
 TrackPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 {
-   double n_vertices = 0., n_tracks = 0., pt_tot = 0.;
-
-   std::pair<double, double> p_ecal, p_ecal_red, p_hcal, p_hcal_red;
-
    edm::Handle< std::vector<reco::Vertex> > vertex_h;
    event.getByLabel(vertexSrc_, vertex_h);
 
@@ -98,12 +97,14 @@ TrackPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       return;
    }
 
-   n_vertices = double(vertex_h->size());
+   double weight = this->weight(event);
+   double n_vertices = double(vertex_h->size());
 
    // TODO why ref/pointer?
    const reco::Vertex *vert = &(vertex_h->front());
-   n_tracks = vert->tracksSize();
+   double n_tracks = vert->tracksSize();
 
+   double pt_tot = 0.;
    reco::Vertex::trackRef_iterator its;
    for (its = vert->tracks_begin(); its != vert->tracks_end(); ++its) {
       pt_tot += (*its)->pt();
@@ -115,13 +116,13 @@ TrackPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       track_en_->Fill(
             double((*its)->eta()),
             double((*its)->phi()),
-            double((*its)->pt()));
+            double((*its)->pt()) * weight);
       track_mp_->Fill(
             double((*its)->eta()),
-            double((*its)->phi()));
+            double((*its)->phi()) * weight);
    }
    
-   event_details_->Fill(n_vertices, n_tracks, pt_tot);
+   event_details_->Fill(weight, n_vertices, n_tracks, pt_tot);
 }
 
 void

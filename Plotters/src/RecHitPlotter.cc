@@ -40,6 +40,8 @@
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
 #include "DataFormats/HcalRecHit/interface/HBHERecHit.h"
 
+#include "Debug/Plotters/interface/BasePlotter.h"
+
 #include "TH2D.h"
 #include "TNtuple.h"
 
@@ -47,7 +49,7 @@
 // class declaration
 //
 
-class RecHitPlotter : public edm::EDAnalyzer {
+class RecHitPlotter : public edm::EDAnalyzer, BasePlotter {
    public:
       explicit RecHitPlotter(const edm::ParameterSet&);
       ~RecHitPlotter();
@@ -75,6 +77,7 @@ class RecHitPlotter : public edm::EDAnalyzer {
 
 RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
    edm::EDAnalyzer(),
+   BasePlotter(config),
    ecalHits_(config.getParameter<edm::InputTag>("ecalHits")),
    hcalHits_(config.getParameter<edm::InputTag>("hcalHits"))
 {
@@ -89,7 +92,7 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
 	 59, -29.5, 29.5, 36, 0.5, 72.5);
 
    event_details_ = fs->make<TNtuple>("event_detail", "",
-         "ecal_tot:n_ecal_tot:hcal_tot:n_hcal_tot");
+         "ecal_tot:n_ecal_tot:hcal_tot:n_hcal_tot:weight");
 }
 
 RecHitPlotter::~RecHitPlotter() {}
@@ -99,6 +102,7 @@ template<typename THit, typename TDetId>
 RecHitPlotter::process_calo(const edm::Event& event,
       const edm::InputTag& tag, TH2D * en, TH2D * mp)
 {
+   double weight = this->weight(event);
    double e_tot = -1.;
    int nhits = 0;
 
@@ -114,8 +118,8 @@ RecHitPlotter::process_calo(const edm::Event& event,
       for (hit = hits->begin(); hit != hits->end(); ++hit) {
          TDetId id = static_cast<TDetId>(hit->id());
          e_tot += hit->energy();
-         en->Fill(id.ieta(), id.iphi(), hit->energy());
-         mp->Fill(id.ieta(), id.iphi());
+         en->Fill(id.ieta(), id.iphi(), hit->energy() * weight);
+         mp->Fill(id.ieta(), id.iphi(), weight);
       }
    }
 
@@ -131,7 +135,7 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          event, hcalHits_, hcal_en_, hcal_mp_);
 
    event_details_->Fill(p_ecal.first, p_ecal.second,
-         p_hcal.first, p_hcal.second);
+         p_hcal.first, p_hcal.second, this->weight(event));
 }
 
 void
