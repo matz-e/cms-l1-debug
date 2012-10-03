@@ -42,8 +42,8 @@
 
 #include "Debug/Plotters/interface/BasePlotter.h"
 
+#include "TH1D.h"
 #include "TH2D.h"
-#include "TNtuple.h"
 
 //
 // class declaration
@@ -69,7 +69,10 @@ class RecHitPlotter : public edm::EDAnalyzer, BasePlotter {
       TH2D* hcal_en_;
       TH2D* hcal_mp_;
 
-      TNtuple* event_details_;
+      TH1D* ecal_en_tot_;
+      TH1D* ecal_hits_;
+      TH1D* hcal_en_tot_;
+      TH1D* hcal_hits_;
 
       edm::InputTag ecalHits_;
       edm::InputTag hcalHits_;
@@ -82,17 +85,23 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
    hcalHits_(config.getParameter<edm::InputTag>("hcalHits"))
 {
    edm::Service<TFileService> fs;
-   ecal_en_ = fs->make<TH2D>("ecal_en", "Energy of ECAL",
+   ecal_en_ = fs->make<TH2D>("ecal_en", "Energy of ECAL;#eta;#phi;E [GeV]",
 	 57, -85.5, 85.5, 60, 0.5, 360.5); 
-   ecal_mp_ = fs->make<TH2D>("ecal_mp", "Mutliplicity of ECAL",
+   ecal_mp_ = fs->make<TH2D>("ecal_mp", "Mutliplicity of ECAL;#eta;#phi;Multiplicity",
 	 57, -85.5, 85.5, 60, 0.5, 360.5); 
-   hcal_en_ = fs->make<TH2D>("hcal_en", "Energy of HCAL",
+   hcal_en_ = fs->make<TH2D>("hcal_en", "Energy of HCAL;#eta;#phi;E [GeV]",
 	 59, -29.5, 29.5, 36, 0.5, 72.5);
-   hcal_mp_ = fs->make<TH2D>("hcal_mp", "Multiplicity of HCAL",
+   hcal_mp_ = fs->make<TH2D>("hcal_mp", "Multiplicity of HCAL;#eta;#phi;Multiplicity",
 	 59, -29.5, 29.5, 36, 0.5, 72.5);
 
-   event_details_ = fs->make<TNtuple>("event_detail", "",
-         "ecal_tot:n_ecal_tot:hcal_tot:n_hcal_tot:weight");
+   ecal_en_tot_ = fs->make<TH1D>("ecal_en_tot", "Total energy in ECAL;E [GeV]",
+         350, 0., 3500.);
+   ecal_hits_ = fs->make<TH1D>("ecal_hits", "Hits per event in the ECAL;n_{hits}",
+         350, 0, 7000);
+   hcal_en_tot_ = fs->make<TH1D>("hcal_en_tot", "Total energy in HCAL;E [GeV]",
+         350, 0., 3500.);
+   hcal_hits_ = fs->make<TH1D>("hcal_hits", "Hits per event in the HCAL;n_{hits}",
+         200, 0, 2000);
 }
 
 RecHitPlotter::~RecHitPlotter() {}
@@ -129,13 +138,17 @@ RecHitPlotter::process_calo(const edm::Event& event,
 void
 RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 {
+   double weight = this->weight(event);
+
    std::pair<double, double> p_ecal = process_calo<EcalRecHit, EBDetId>(
          event, ecalHits_, ecal_en_, ecal_mp_);
    std::pair<double, double> p_hcal = process_calo<HBHERecHit, HcalDetId>(
          event, hcalHits_, hcal_en_, hcal_mp_);
 
-   event_details_->Fill(p_ecal.first, p_ecal.second,
-         p_hcal.first, p_hcal.second, this->weight(event));
+   ecal_en_tot_->Fill(p_ecal.first, weight);
+   ecal_hits_->Fill(p_ecal.second, weight);
+   hcal_en_tot_->Fill(p_hcal.first, weight);
+   hcal_hits_->Fill(p_hcal.second, weight);
 }
 
 void

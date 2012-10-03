@@ -8,6 +8,7 @@ class BasePlotter {
       ~BasePlotter();
       double weight(const edm::Event&) const;
    private:
-      bool weigh_;
-      std::map<int, float> weights_;
+      static bool init_;
+      static bool weigh_;
+      static std::map<int, float> weights_;
 };

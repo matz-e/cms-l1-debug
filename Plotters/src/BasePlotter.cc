@@ -5,10 +5,15 @@
 
 #include "Debug/Plotters/interface/BasePlotter.h"
 
-BasePlotter::BasePlotter(const edm::ParameterSet& config) :
-   weigh_(config.getUntrackedParameter<bool>("weigh", false))
+bool BasePlotter::init_ = false;
+bool BasePlotter::weigh_ = false;
+std::map<int, float> BasePlotter::weights_;
+
+BasePlotter::BasePlotter(const edm::ParameterSet& config)
 {
-   if (weigh_) {
+   weigh_ = weigh_ || config.getUntrackedParameter<bool>("weigh", false);
+
+   if (weigh_ && !init_) {
       std::string fn = config.getUntrackedParameter<std::string>(
             "weightFile", "weights.root");
       TFile f(fn.c_str());
@@ -31,10 +36,12 @@ BasePlotter::BasePlotter(const edm::ParameterSet& config) :
                edm::LogError("BasePlotter") << "Can't set branches up correctly!"
                   << std::endl;
             } else {
+               edm::LogInfo("BasePlotter") << "Commencing weight reading..." << std::endl;
                for (unsigned int i = 0; i < t->GetEntries(); ++i) {
                   t->GetEntry(i);
                   weights_[id] = w;
                }
+               edm::LogInfo("BasePlotter") << "Finishing weight reading." << std::endl;
             } // Branch check
          } // Tree check
       } // File check

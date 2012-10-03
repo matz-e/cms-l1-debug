@@ -37,7 +37,8 @@
 
 #include "Debug/Plotters/interface/BasePlotter.h"
 
-#include "TNtuple.h"
+#include "TH1D.h"
+#include "TString.h"
 //
 // class declaration
 //
@@ -57,8 +58,8 @@ class DigiPlotter : public edm::EDAnalyzer, BasePlotter {
       edm::InputTag ecal_digis_;
       edm::InputTag hcal_digis_;
 
-      TNtuple *tpl_e_digis_;
-      TNtuple *tpl_h_digis_;
+      TH1D *ecal_digi_[10];
+      TH1D *hcal_digi_[10];
 };
 
 DigiPlotter::DigiPlotter(const edm::ParameterSet& config) :
@@ -68,10 +69,13 @@ DigiPlotter::DigiPlotter(const edm::ParameterSet& config) :
    hcal_digis_(config.getParameter<edm::InputTag>("hcalDigis"))
 {
    edm::Service<TFileService> fs;
-   tpl_e_digis_ = fs->make<TNtuple>("ecal_digis", "",
-         "e0:e1:e2:e3:e4:e5:e6:e7:e8:e9:weight");
-   tpl_h_digis_ = fs->make<TNtuple>("hcal_digis", "",
-         "d0:d1:d2:d3:d4:d5:d6:d7:d8:d9:weight");
+
+   for (int i = 0; i < 10; ++i) {
+      ecal_digi_[i] = fs->make<TH1D>(TString::Format("ecal_digi_%d", i),
+            TString::Format("ECAL digi %d;ADC count", i), 500, 0, 1000);
+      hcal_digi_[i] = fs->make<TH1D>(TString::Format("hcal_digi_%d", i),
+            TString::Format("HCAL digi %d;ADC count", i), 500, 0, 500);
+   }
 }
 
 
@@ -82,6 +86,8 @@ DigiPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 {
    using namespace edm;
 
+   double weight = this->weight(event);
+
    Handle<EBDigiCollection> e_digis;
    if (!event.getByLabel(ecal_digis_, e_digis)) {
       LogError("DigiPlotter") <<
@@ -91,15 +97,11 @@ DigiPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       for (EBDigiCollection::const_iterator digi = e_digis->begin();
             digi != e_digis->end(); ++digi) {
          EBDataFrame df(*digi);
-         float digi_vals[11];
-         digi_vals[10] = this->weight(event);
 
          for (unsigned int i = 0; i < digi->size(); ++i) {
             EcalMGPASample sample(df.sample(i));
-            digi_vals[i] = sample.adc();
+            ecal_digi_[i]->Fill(sample.adc(), weight);
          }
-
-         tpl_e_digis_->Fill(digi_vals);
       }
    }
 
@@ -111,15 +113,10 @@ DigiPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    } else {
       SortedCollection<HBHEDataFrame>::const_iterator digi;
       for (digi = h_digis->begin(); digi != h_digis->end(); ++digi) {
-         float digi_vals[11];
-         digi_vals[10] = this->weight(event);
-
          for (int i = 0; i < digi->size(); ++i) {
             HcalQIESample sample(digi->sample(i));
-            digi_vals[i] = sample.adc();
+            hcal_digi_[i]->Fill(sample.adc(), weight);
          }
-
-         tpl_h_digis_->Fill(digi_vals);
       }
    }
 }
