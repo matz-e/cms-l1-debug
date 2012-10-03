@@ -37,8 +37,8 @@
 
 #include "Debug/Plotters/interface/BasePlotter.h"
 
-#include "TNtuple.h"
-#include "TH2F.h"
+#include "TH1D.h"
+#include "TH2D.h"
 //
 // class declaration
 //
@@ -57,11 +57,11 @@ class CaloRegionPlotter : public edm::EDAnalyzer, BasePlotter {
       // ----------member data ---------------------------
       edm::InputTag regions_;
 
-      TNtuple *tpl_;
-
       TH2D *h_calo_et_;
       TH2D *h_calo_fg_;
-      TH2D* h_calo_mp_;
+      TH2D *h_calo_mp_;
+
+      TH1D *calo_et_;
 };
 
 CaloRegionPlotter::CaloRegionPlotter(const edm::ParameterSet& config) :
@@ -70,13 +70,16 @@ CaloRegionPlotter::CaloRegionPlotter(const edm::ParameterSet& config) :
    regions_(config.getParameter<edm::InputTag>("caloRegions"))
 {
    edm::Service<TFileService> fs;
-   tpl_ = fs->make<TNtuple>("calo_regions", "",
-         "et_tot:weight");
-   h_calo_et_ = fs->make<TH2D>("calo_region_et", "E_{T} of calo regions",
+   calo_et_ = fs->make<TH1D>("calo_et", "#sum E_{T} of calo regions;#sum E_{T} [GeV]",
+         200, 0., 2000.);
+   h_calo_et_ = fs->make<TH2D>("calo_region_et",
+         "E_{T} of calo regions;#eta;#phi;E_{T} [GeV]",
          22, -.5, 21.5, 18, -.5, 17.5);
-   h_calo_fg_ = fs->make<TH2D>("calo_region_fg", "Finegrain of calo regions",
+   h_calo_fg_ = fs->make<TH2D>("calo_region_fg", 
+         "Finegrain of calo regions;#eta;#phi;Finegrain [GeV]",
          22, -.5, 21.5, 18, -.5, 17.5);
-   h_calo_mp_ = fs->make<TH2D>("calo_region_mp", "Multiplicity of calo regions",
+   h_calo_mp_ = fs->make<TH2D>("calo_region_mp",
+         "Multiplicity of calo regions;#eta;#phi;Multiplicity",
          22, -.5, 21.5, 18, -.5, 17.5);
 }
 
@@ -107,7 +110,7 @@ CaloRegionPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup
       }
    }
 
-   tpl_->Fill(et_tot, weight);
+   calo_et_->Fill(et_tot, weight);
 }
 
 void

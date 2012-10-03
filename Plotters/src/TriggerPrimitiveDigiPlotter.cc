@@ -42,8 +42,8 @@
 
 #include "Debug/Plotters/interface/BasePlotter.h"
 
+#include "TH1D.h"
 #include "TH2D.h"
-#include "TNtuple.h"
 //
 // class declaration
 //
@@ -63,13 +63,24 @@ class TriggerPrimitiveDigiPlotter : public edm::EDAnalyzer, BasePlotter {
       edm::InputTag ecal_digis_;
       edm::InputTag hcal_digis_;
 
-      TNtuple *tpl_e_digis_;
-      TNtuple *tpl_h_digis_;
-
       TH2D *h_ecal_adc_;
       TH2D *h_ecal_mp_;
       TH2D *h_hcal_adc_;
       TH2D *h_hcal_mp_;
+
+      TH1D *ecal_digi_soi_;
+      TH1D *ecal_digi_0_;
+      TH1D *ecal_digi_1_;
+      TH1D *ecal_digi_2_;
+      TH1D *ecal_digi_3_;
+      TH1D *ecal_digi_4_;
+
+      TH1D *hcal_digi_soi_;
+      TH1D *hcal_digi_0_;
+      TH1D *hcal_digi_1_;
+      TH1D *hcal_digi_2_;
+      TH1D *hcal_digi_3_;
+      TH1D *hcal_digi_4_;
 };
 
 TriggerPrimitiveDigiPlotter::TriggerPrimitiveDigiPlotter(const edm::ParameterSet& config) :
@@ -79,13 +90,44 @@ TriggerPrimitiveDigiPlotter::TriggerPrimitiveDigiPlotter(const edm::ParameterSet
    hcal_digis_(config.getParameter<edm::InputTag>("hcalDigis"))
 {
    edm::Service<TFileService> fs;
-   tpl_e_digis_ = fs->make<TNtuple>("ecal_trigger_digis", "", "e_soi:e0:e1:e2:e3:e4:weight");
-   tpl_h_digis_ = fs->make<TNtuple>("hcal_trigger_digis", "", "h_soi:h0:h1:h2:h3:h4:weight");
+   h_ecal_adc_ = fs->make<TH2D>("ecal_soi_adc",
+         "ECAL trigger primitive SOI;#eta;#phi;ADC count",
+         57, -28.5, 28.5, 72, 0.5, 72.5);
+   h_ecal_mp_  = fs->make<TH2D>("ecal_soi_mp", 
+         "ECAL trigger primitive SOI;#eta;#phi;Multiplicity", 
+         57, -28.5, 28.5, 72, 0.5, 72.5);
+   h_hcal_adc_ = fs->make<TH2D>("hcal_soi_adc",
+         "HCAL trigger primitive SOI;#eta;#phi;ADC count", 
+         65, -32.5, 32.5, 72, 0.5, 72.5);
+   h_hcal_mp_  = fs->make<TH2D>("hcal_soi_mp",
+         "HCAL trigger primitive SOI;#eta;#phi;Multiplicity",
+         65, -32.5, 32.5, 72, 0.5, 72.5);
 
-   h_ecal_adc_ = fs->make<TH2D>("ecal_soi_adc", "", 57, -28.5, 28.5, 72, 0.5, 72.5);
-   h_ecal_mp_  = fs->make<TH2D>("ecal_soi_mp", "", 57, -28.5, 28.5, 72, 0.5, 72.5);
-   h_hcal_adc_ = fs->make<TH2D>("hcal_soi_adc", "", 65, -32.5, 32.5, 72, 0.5, 72.5);
-   h_hcal_mp_  = fs->make<TH2D>("hcal_soi_mp", "", 65, -32.5, 32.5, 72, 0.5, 72.5);
+   ecal_digi_soi_ = fs->make<TH1D>("ecal_digi_soi",
+         "ECAL trigger primitive digi SOI;ADC count", 250, 0, 250);
+   ecal_digi_0_ = fs->make<TH1D>("ecal_digi_0",
+         "ECAL trigger primitive digi 0;ADC count", 250, 0, 250);
+   ecal_digi_1_ = fs->make<TH1D>("ecal_digi_1",
+         "ECAL trigger primitive digi 1;ADC count", 250, 0, 250);
+   ecal_digi_2_ = fs->make<TH1D>("ecal_digi_2",
+         "ECAL trigger primitive digi 2;ADC count", 250, 0, 250);
+   ecal_digi_3_ = fs->make<TH1D>("ecal_digi_3",
+         "ECAL trigger primitive digi 3;ADC count", 250, 0, 250);
+   ecal_digi_4_ = fs->make<TH1D>("ecal_digi_4",
+         "ECAL trigger primitive digi 4;ADC count", 250, 0, 250);
+
+   hcal_digi_soi_ = fs->make<TH1D>("hcal_digi_soi",
+         "HCAL trigger primitive digi SOI;ADC count", 250, 0, 250);
+   hcal_digi_0_ = fs->make<TH1D>("hcal_digi_0",
+         "HCAL trigger primitive digi 0;ADC count", 250, 0, 250);
+   hcal_digi_1_ = fs->make<TH1D>("hcal_digi_1",
+         "HCAL trigger primitive digi 1;ADC count", 250, 0, 250);
+   hcal_digi_2_ = fs->make<TH1D>("hcal_digi_2",
+         "HCAL trigger primitive digi 2;ADC count", 250, 0, 250);
+   hcal_digi_3_ = fs->make<TH1D>("hcal_digi_3",
+         "HCAL trigger primitive digi 3;ADC count", 250, 0, 250);
+   hcal_digi_4_ = fs->make<TH1D>("hcal_digi_4",
+         "HCAL trigger primitive digi 4;ADC count", 250, 0, 250);
 }
 
 TriggerPrimitiveDigiPlotter::~TriggerPrimitiveDigiPlotter() {}
@@ -95,8 +137,7 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
 {
    using namespace edm;
 
-   float digis[7];
-   digis[6] = this->weight(event);
+   double weight = this->weight(event);
 
    Handle<EcalTrigPrimDigiCollection> ecal_handle_;
    if (!event.getByLabel(ecal_digis_, ecal_handle_)) {
@@ -104,15 +145,17 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
          "Can't find ecal trigger primitive digi collection with tag '" <<
          ecal_digis_ << "'" << std::endl;
    } else {
-      for (EcalTrigPrimDigiCollection::const_iterator primitive = ecal_handle_->begin();
-            primitive != ecal_handle_->end(); ++primitive) {
-         digis[0] = primitive->compressedEt();
-         for (int i = 0; i < primitive->size(); ++i)
-            digis[i + 1] = primitive->sample(i).compressedEt();
-         tpl_e_digis_->Fill(digis);
+      for (EcalTrigPrimDigiCollection::const_iterator p = ecal_handle_->begin();
+            p != ecal_handle_->end(); ++p) {
+         ecal_digi_soi_->Fill(p->compressedEt(), weight);
+         ecal_digi_0_->Fill(p->sample(0).compressedEt(), weight);
+         ecal_digi_1_->Fill(p->sample(1).compressedEt(), weight);
+         ecal_digi_2_->Fill(p->sample(2).compressedEt(), weight);
+         ecal_digi_3_->Fill(p->sample(3).compressedEt(), weight);
+         ecal_digi_4_->Fill(p->sample(4).compressedEt(), weight);
 
-         EcalTrigTowerDetId id = primitive->id();
-         h_ecal_adc_->Fill(id.ieta(), id.iphi(), primitive->compressedEt());
+         EcalTrigTowerDetId id = p->id();
+         h_ecal_adc_->Fill(id.ieta(), id.iphi(), p->compressedEt());
          h_ecal_mp_->Fill(id.ieta(), id.iphi());
       }
    }
@@ -123,16 +166,18 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
          "Can't find hcal trigger primitive digi collection with tag '" <<
          hcal_digis_ << "'" << std::endl;
    } else {
-      SortedCollection<HcalTriggerPrimitiveDigi>::const_iterator primitive;
-      for (primitive = hcal_handle_->begin(); primitive != hcal_handle_->end();
-            ++primitive) {
-         digis[0] = primitive->SOI_compressedEt();
-         for (int i = 0; i < primitive->size(); ++i)
-            digis[i + 1] = primitive->sample(i).compressedEt();
-         tpl_h_digis_->Fill(digis);
+      SortedCollection<HcalTriggerPrimitiveDigi>::const_iterator p;
+      for (p = hcal_handle_->begin(); p != hcal_handle_->end();
+            ++p) {
+         hcal_digi_soi_->Fill(p->SOI_compressedEt(), weight);
+         hcal_digi_0_->Fill(p->sample(0).compressedEt(), weight);
+         hcal_digi_1_->Fill(p->sample(1).compressedEt(), weight);
+         hcal_digi_2_->Fill(p->sample(2).compressedEt(), weight);
+         hcal_digi_3_->Fill(p->sample(3).compressedEt(), weight);
+         hcal_digi_4_->Fill(p->sample(4).compressedEt(), weight);
 
-         HcalTrigTowerDetId id = primitive->id();
-         h_ecal_adc_->Fill(id.ieta(), id.iphi(), primitive->SOI_compressedEt());
+         HcalTrigTowerDetId id = p->id();
+         h_ecal_adc_->Fill(id.ieta(), id.iphi(), p->SOI_compressedEt());
          h_ecal_mp_->Fill(id.ieta(), id.iphi());
       }
    }
