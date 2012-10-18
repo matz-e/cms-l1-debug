@@ -58,6 +58,8 @@ class DigiPlotter : public edm::EDAnalyzer, BasePlotter {
       edm::InputTag ecal_digis_;
       edm::InputTag hcal_digis_;
 
+      TH1D *hcal_presample_;
+
       TH1D *ecal_digi_[10];
       TH1D *hcal_digi_[10];
 };
@@ -69,6 +71,8 @@ DigiPlotter::DigiPlotter(const edm::ParameterSet& config) :
    hcal_digis_(config.getParameter<edm::InputTag>("hcalDigis"))
 {
    edm::Service<TFileService> fs;
+   hcal_presample_ = fs->make<TH1D>("hcal_presample", "HCAL presamples",
+         10, -0.5, 9.5);
 
    for (int i = 0; i < 10; ++i) {
       ecal_digi_[i] = fs->make<TH1D>(TString::Format("ecal_digi_%d", i),
@@ -113,6 +117,8 @@ DigiPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    } else {
       SortedCollection<HBHEDataFrame>::const_iterator digi;
       for (digi = h_digis->begin(); digi != h_digis->end(); ++digi) {
+         hcal_presample_->Fill(digi->presamples(), weight);
+
          for (int i = 0; i < digi->size(); ++i) {
             HcalQIESample sample(digi->sample(i));
             hcal_digi_[i]->Fill(sample.adc(), weight);
