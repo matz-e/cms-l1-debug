@@ -62,6 +62,7 @@ class CaloRegionPlotter : public edm::EDAnalyzer, BasePlotter {
       TH2D *h_calo_mp_;
 
       TH1D *calo_et_;
+      TH1D *calo_et_tot_;
 };
 
 CaloRegionPlotter::CaloRegionPlotter(const edm::ParameterSet& config) :
@@ -70,7 +71,10 @@ CaloRegionPlotter::CaloRegionPlotter(const edm::ParameterSet& config) :
    regions_(config.getParameter<edm::InputTag>("caloRegions"))
 {
    edm::Service<TFileService> fs;
-   calo_et_ = fs->make<TH1D>("calo_et", "#sum E_{T} of calo regions;#sum E_{T} [GeV]",
+   calo_et_ = fs->make<TH1D>("calo_et", "E_{T} of calo regions; E_{T} [GeV]",
+         400, 0., 2000.);
+   calo_et_tot_ = fs->make<TH1D>("calo_et_tot",
+         "#sum E_{T} of calo regions;#sum E_{T} [GeV]",
          200, 0., 2000.);
    h_calo_et_ = fs->make<TH2D>("calo_region_et",
          "E_{T} of calo regions;#eta;#phi;E_{T} [GeV]",
@@ -104,13 +108,14 @@ CaloRegionPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup
             r != regions->end(); ++r) {
          et_tot += r->et();
 
+         calo_et_->Fill(r->et(), weight);
          h_calo_et_->Fill(r->gctEta(), r->gctPhi(), weight * r->et());
          h_calo_fg_->Fill(r->gctEta(), r->gctPhi(), weight * r->fineGrain());
          h_calo_mp_->Fill(r->gctEta(), r->gctPhi(), weight);
       }
    }
 
-   calo_et_->Fill(et_tot, weight);
+   calo_et_tot_->Fill(et_tot, weight);
 }
 
 void
