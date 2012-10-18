@@ -11,6 +11,7 @@
 <use name="DataFormats/HcalDigi"/>
 <use name="DataFormats/HcalRecHit"/>
 <use name="DataFormats/L1CaloTrigger"/>
+<use name="DataFormats/L1GlobalCaloTrigger"/>
 <use name="DataFormats/TrackReco"/>
 <use name="DataFormats/VertexReco"/>
 <use name="PhysicsTools/Utilities"/>
