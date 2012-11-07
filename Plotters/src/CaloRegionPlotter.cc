@@ -63,6 +63,9 @@ class CaloRegionPlotter : public edm::EDAnalyzer, BasePlotter {
 
       TH1D *calo_et_;
       TH1D *calo_et_tot_;
+
+      TH1D *calo_et_no_hf_;
+      TH1D *calo_et_tot_no_hf_;
 };
 
 CaloRegionPlotter::CaloRegionPlotter(const edm::ParameterSet& config) :
@@ -74,6 +77,11 @@ CaloRegionPlotter::CaloRegionPlotter(const edm::ParameterSet& config) :
    calo_et_ = fs->make<TH1D>("calo_et", "E_{T} of calo regions; E_{T} [GeV]",
          400, 0., 2000.);
    calo_et_tot_ = fs->make<TH1D>("calo_et_tot",
+         "#sum E_{T} of calo regions;#sum E_{T} [GeV]",
+         200, 0., 2000.);
+   calo_et_no_hf_ = fs->make<TH1D>("calo_et_no_hf", "E_{T} of calo regions; E_{T} [GeV]",
+         400, 0., 2000.);
+   calo_et_tot_no_hf_ = fs->make<TH1D>("calo_et_tot_no_hf",
          "#sum E_{T} of calo regions;#sum E_{T} [GeV]",
          200, 0., 2000.);
    h_calo_et_ = fs->make<TH2D>("calo_region_et",
@@ -96,6 +104,7 @@ CaloRegionPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup
    using namespace edm;
 
    double et_tot = 0.;
+   double et_tot_no_hf = 0.;
    double weight = this->weight(event);
 
    Handle<L1CaloRegionCollection> regions;
@@ -104,6 +113,7 @@ CaloRegionPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup
          "Can't find calo region collection with tag '" <<
          regions_ << "'" << std::endl;
    } else {
+      std::cout << "CR: " << regions->size() << std::endl;
       for (L1CaloRegionCollection::const_iterator r = regions->begin();
             r != regions->end(); ++r) {
          et_tot += r->et();
@@ -112,10 +122,16 @@ CaloRegionPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup
          h_calo_et_->Fill(r->gctEta(), r->gctPhi(), weight * r->et());
          h_calo_fg_->Fill(r->gctEta(), r->gctPhi(), weight * r->fineGrain());
          h_calo_mp_->Fill(r->gctEta(), r->gctPhi(), weight);
+
+         if (r->gctEta() > 3 && r->gctEta() < 18) {
+            et_tot_no_hf += r->et();
+            calo_et_no_hf_->Fill(r->et(), weight);
+         }
       }
    }
 
    calo_et_tot_->Fill(et_tot, weight);
+   calo_et_tot_no_hf_->Fill(et_tot_no_hf, weight);
 }
 
 void

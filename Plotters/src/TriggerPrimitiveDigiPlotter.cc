@@ -81,6 +81,13 @@ class TriggerPrimitiveDigiPlotter : public edm::EDAnalyzer, BasePlotter {
       TH1D *hcal_digi_2_;
       TH1D *hcal_digi_3_;
       TH1D *hcal_digi_4_;
+
+      TH1D *hcal_digi_soi_no_hf_;
+      TH1D *hcal_digi_0_no_hf_;
+      TH1D *hcal_digi_1_no_hf_;
+      TH1D *hcal_digi_2_no_hf_;
+      TH1D *hcal_digi_3_no_hf_;
+      TH1D *hcal_digi_4_no_hf_;
 };
 
 TriggerPrimitiveDigiPlotter::TriggerPrimitiveDigiPlotter(const edm::ParameterSet& config) :
@@ -127,6 +134,19 @@ TriggerPrimitiveDigiPlotter::TriggerPrimitiveDigiPlotter(const edm::ParameterSet
    hcal_digi_3_ = fs->make<TH1D>("hcal_digi_3",
          "HCAL trigger primitive digi 3;ADC count", 250, 0, 250);
    hcal_digi_4_ = fs->make<TH1D>("hcal_digi_4",
+         "HCAL trigger primitive digi 4;ADC count", 250, 0, 250);
+
+   hcal_digi_soi_no_hf_ = fs->make<TH1D>("hcal_digi_soi_no_hf",
+         "HCAL trigger primitive digi SOI;ADC count", 250, 0, 250);
+   hcal_digi_0_no_hf_ = fs->make<TH1D>("hcal_digi_0_no_hf",
+         "HCAL trigger primitive digi 0;ADC count", 250, 0, 250);
+   hcal_digi_1_no_hf_ = fs->make<TH1D>("hcal_digi_1_no_hf",
+         "HCAL trigger primitive digi 1;ADC count", 250, 0, 250);
+   hcal_digi_2_no_hf_ = fs->make<TH1D>("hcal_digi_2_no_hf",
+         "HCAL trigger primitive digi 2;ADC count", 250, 0, 250);
+   hcal_digi_3_no_hf_ = fs->make<TH1D>("hcal_digi_3_no_hf",
+         "HCAL trigger primitive digi 3;ADC count", 250, 0, 250);
+   hcal_digi_4_no_hf_ = fs->make<TH1D>("hcal_digi_4_no_hf",
          "HCAL trigger primitive digi 4;ADC count", 250, 0, 250);
 }
 
@@ -179,6 +199,15 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
          HcalTrigTowerDetId id = p->id();
          h_hcal_adc_->Fill(id.ieta(), id.iphi(), p->SOI_compressedEt() * weight);
          h_hcal_mp_->Fill(id.ieta(), id.iphi(), weight);
+
+         if (id.ieta() > -29 && id.ieta() < 29) {
+            hcal_digi_soi_no_hf_->Fill(p->SOI_compressedEt(), weight);
+            hcal_digi_0_no_hf_->Fill(p->sample(0).compressedEt(), weight);
+            hcal_digi_1_no_hf_->Fill(p->sample(1).compressedEt(), weight);
+            hcal_digi_2_no_hf_->Fill(p->sample(2).compressedEt(), weight);
+            hcal_digi_3_no_hf_->Fill(p->sample(3).compressedEt(), weight);
+            hcal_digi_4_no_hf_->Fill(p->sample(4).compressedEt(), weight);
+         }
       }
    }
 }
