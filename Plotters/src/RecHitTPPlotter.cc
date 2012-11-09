@@ -42,7 +42,7 @@
 
 #include "Debug/Plotters/interface/BasePlotter.h"
 
-#include "TTree.h"
+#include "TH2F.h"
 //
 // class declaration
 //
@@ -59,16 +59,12 @@ class RecHitTPPlotter : public edm::EDAnalyzer, BasePlotter {
       virtual void analyze(const edm::Event&, const edm::EventSetup&);
 
       // ----------member data ---------------------------
+      const static int NETA = 32;
+
       edm::InputTag hcal_digis_;
       edm::InputTag hcal_hits_;
 
-      TTree *data_;
-
-      int ieta_;
-      int iphi_;
-      double weight_;
-      double hit_;
-      int tp_;
+      TH2F *hists_[2 * NETA + 1];
 };
 
 RecHitTPPlotter::RecHitTPPlotter(const edm::ParameterSet& config) :
@@ -78,12 +74,10 @@ RecHitTPPlotter::RecHitTPPlotter(const edm::ParameterSet& config) :
    hcal_hits_(config.getParameter<edm::InputTag>("hcalHits"))
 {
    edm::Service<TFileService> fs;
-   data_ = fs->make<TTree>("energies", "Energies from both RecHit and TP for HCAL");
-   data_->Branch("ieta", &ieta_);
-   data_->Branch("iphi", &iphi_);
-   data_->Branch("HCAL_RecHit", &hit_);
-   data_->Branch("HCAL_TP", &tp_);
-   data_->Branch("weight", &weight_);
+   for (int i = -NETA; i <= NETA; ++i)
+      hists_[i + NETA] = fs->make<TH2F>(TString::Format("ieta_%d", i),
+            TString::Format("RecHits vs TP (ieta %d);TP [ADC count];RecHits [GeV]", i),
+            500, 0, 500, 2000, 0, 500);
 }
 
 RecHitTPPlotter::~RecHitTPPlotter() {}
@@ -93,7 +87,7 @@ RecHitTPPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 {
    using namespace edm;
 
-   weight_ = this->weight(event);
+   double weight = this->weight(event);
 
    std::map< int, std::map< int, std::pair<int, double> > > energies;
 
@@ -124,14 +118,12 @@ RecHitTPPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    }
 
    for (auto i = energies.begin(); i != energies.end(); ++i) {
-      ieta_ = i->first;
+      int ieta = i->first;
       for (auto j = i->second.begin(); j != i->second.end(); ++j) {
-         iphi_ = j->first;
-         tp_ = j->second.first;
-         hit_ = j->second.second;
+         int tp = j->second.first;
+         double hit = j->second.second;
 
-         if (tp_ > 0 || hit_ > 0)
-            data_->Fill();
+         hists_[ieta + NETA]->Fill(tp, hit);
       }
    }
 }
