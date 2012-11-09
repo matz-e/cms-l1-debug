@@ -77,7 +77,7 @@ RecHitTPPlotter::RecHitTPPlotter(const edm::ParameterSet& config) :
    for (int i = -NETA; i <= NETA; ++i)
       hists_[i + NETA] = fs->make<TH2F>(TString::Format("ieta_%d", i),
             TString::Format("RecHits vs TP (ieta %d);TP [ADC count];RecHits [GeV]", i),
-            500, 0, 500, 2000, 0, 500);
+            500, 0, 500, 5000, 0, 500);
 }
 
 RecHitTPPlotter::~RecHitTPPlotter() {}
