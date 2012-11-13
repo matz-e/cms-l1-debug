@@ -3,6 +3,7 @@
 <use name="FWCore/PluginManager"/>
 <use name="FWCore/ParameterSet"/>
 <use name="FWCore/ServiceRegistry"/>
+<use name="CalibFormats/CaloTPG"/>
 <use name="CommonTools/UtilAlgos"/>
 <use name="DataFormats/EcalDetId"/>
 <use name="DataFormats/EcalDigi"/>

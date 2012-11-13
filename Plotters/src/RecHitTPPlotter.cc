@@ -28,11 +28,16 @@
 #include "FWCore/Framework/interface/ESHandle.h"
 
 #include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/EventSetup.h"
+#include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
+
+#include "CalibFormats/CaloTPG/interface/CaloTPGRecord.h"
+#include "CalibFormats/CaloTPG/interface/CaloTPGTranscoder.h"
 
 #include "DataFormats/Common/interface/SortedCollection.h"
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
@@ -76,7 +81,7 @@ RecHitTPPlotter::RecHitTPPlotter(const edm::ParameterSet& config) :
    edm::Service<TFileService> fs;
    for (int i = -NETA; i <= NETA; ++i)
       hists_[i + NETA] = fs->make<TH2F>(TString::Format("ieta_%d", i),
-            TString::Format("RecHits vs TP (ieta %d);TP [ADC count];RecHits [GeV]", i),
+            TString::Format("RecHits vs TP (ieta %d);TP [GeV];RecHits [GeV]", i),
             500, 0, 500, 5000, 0, 500);
 }
 
@@ -86,6 +91,10 @@ void
 RecHitTPPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 {
    using namespace edm;
+
+   ESHandle<CaloTPGTranscoder> tcoder;
+   setup.get<CaloTPGRecord>().get(tcoder);
+   tcoder->setup(setup, CaloTPGTranscoder::HcalTPG);
 
    double weight = this->weight(event);
 
@@ -113,7 +122,8 @@ RecHitTPPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       for (p = hcal_handle_->begin(); p != hcal_handle_->end();
             ++p) {
          HcalTrigTowerDetId id = p->id();
-         energies[id.ieta()][id.iphi()].first += p->SOI_compressedEt();
+         energies[id.ieta()][id.iphi()].first += 
+            tcoder->hcaletValue(id.ieta(), id.iphi(), p->SOI_compressedEt());
       }
    }
 
@@ -123,7 +133,8 @@ RecHitTPPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          int tp = j->second.first;
          double hit = j->second.second;
 
-         hists_[ieta + NETA]->Fill(tp, hit);
+         if (tp > 0 || hit > 0.)
+            hists_[ieta + NETA]->Fill(tp, hit, weight);
       }
    }
 }
