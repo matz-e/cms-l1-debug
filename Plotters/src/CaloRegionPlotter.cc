@@ -113,7 +113,7 @@ CaloRegionPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup
          "Can't find calo region collection with tag '" <<
          regions_ << "'" << std::endl;
    } else {
-      std::cout << "CR: " << regions->size() << std::endl;
+      // std::cout << "CR: " << regions->size() << std::endl;
       for (L1CaloRegionCollection::const_iterator r = regions->begin();
             r != regions->end(); ++r) {
          et_tot += r->et();
