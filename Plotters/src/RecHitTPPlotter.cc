@@ -108,7 +108,9 @@ RecHitTPPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       typename edm::SortedCollection<HBHERecHit>::const_iterator hit;
       for (hit = hits->begin(); hit != hits->end(); ++hit) {
          HcalDetId id = static_cast<HcalDetId>(hit->id());
-         energies[id.ieta()][id.iphi()].second += hit->energy();
+
+         if (id.depth() == 1)
+            energies[id.ieta()][id.iphi()].second += hit->energy();
       }
    }
 
