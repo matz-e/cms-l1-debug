@@ -44,6 +44,7 @@
 
 #include "TH1D.h"
 #include "TH2D.h"
+#include "TString.h"
 //
 // class declaration
 //
@@ -68,26 +69,17 @@ class TriggerPrimitiveDigiPlotter : public edm::EDAnalyzer, BasePlotter {
       TH2D *h_hcal_adc_;
       TH2D *h_hcal_mp_;
 
-      TH1D *ecal_digi_soi_;
-      TH1D *ecal_digi_0_;
-      TH1D *ecal_digi_1_;
-      TH1D *ecal_digi_2_;
-      TH1D *ecal_digi_3_;
-      TH1D *ecal_digi_4_;
+      TH1D *ecal_digi_soi_eb;
+      TH1D *ecal_digi_soi_ebee;
+      TH1D *ecal_digi_soi_ee;
+      TH1D *ecal_digi_soi_ef;
+      TH1D *ecal_digi_[5];
 
-      TH1D *hcal_digi_soi_;
-      TH1D *hcal_digi_0_;
-      TH1D *hcal_digi_1_;
-      TH1D *hcal_digi_2_;
-      TH1D *hcal_digi_3_;
-      TH1D *hcal_digi_4_;
-
-      TH1D *hcal_digi_soi_no_hf_;
-      TH1D *hcal_digi_0_no_hf_;
-      TH1D *hcal_digi_1_no_hf_;
-      TH1D *hcal_digi_2_no_hf_;
-      TH1D *hcal_digi_3_no_hf_;
-      TH1D *hcal_digi_4_no_hf_;
+      TH1D *hcal_digi_soi_hb;
+      TH1D *hcal_digi_soi_hbhe;
+      TH1D *hcal_digi_soi_he;
+      TH1D *hcal_digi_soi_hf;
+      TH1D *hcal_digi_[5];
 };
 
 TriggerPrimitiveDigiPlotter::TriggerPrimitiveDigiPlotter(const edm::ParameterSet& config) :
@@ -97,7 +89,8 @@ TriggerPrimitiveDigiPlotter::TriggerPrimitiveDigiPlotter(const edm::ParameterSet
    hcal_digis_(config.getParameter<edm::InputTag>("hcalDigis"))
 {
    edm::Service<TFileService> fs;
-   h_ecal_adc_ = fs->make<TH2D>("ecal_soi_adc",
+
+   h_ecal_adc_ = fs->make<TH2D>("ecal_soi_adc_",
          "ECAL trigger primitive SOI;#eta;#phi;ADC count",
          57, -28.5, 28.5, 72, 0.5, 72.5);
    h_ecal_mp_  = fs->make<TH2D>("ecal_soi_mp", 
@@ -110,44 +103,33 @@ TriggerPrimitiveDigiPlotter::TriggerPrimitiveDigiPlotter(const edm::ParameterSet
          "HCAL trigger primitive SOI;#eta;#phi;Multiplicity",
          65, -32.5, 32.5, 72, 0.5, 72.5);
 
-   ecal_digi_soi_ = fs->make<TH1D>("ecal_digi_soi",
-         "ECAL trigger primitive digi SOI;ADC count", 250, 0, 250);
-   ecal_digi_0_ = fs->make<TH1D>("ecal_digi_0",
-         "ECAL trigger primitive digi 0;ADC count", 250, 0, 250);
-   ecal_digi_1_ = fs->make<TH1D>("ecal_digi_1",
-         "ECAL trigger primitive digi 1;ADC count", 250, 0, 250);
-   ecal_digi_2_ = fs->make<TH1D>("ecal_digi_2",
-         "ECAL trigger primitive digi 2;ADC count", 250, 0, 250);
-   ecal_digi_3_ = fs->make<TH1D>("ecal_digi_3",
-         "ECAL trigger primitive digi 3;ADC count", 250, 0, 250);
-   ecal_digi_4_ = fs->make<TH1D>("ecal_digi_4",
-         "ECAL trigger primitive digi 4;ADC count", 250, 0, 250);
+   ecal_digi_soi_eb = fs->make<TH1D>("ecal_digi_soi_eb",
+         "ECAL trigger primitive digi SOI (barrel);ADC count", 250, 0, 250);
+   ecal_digi_soi_ebee = fs->make<TH1D>("ecal_digi_soi_ebee",
+         "ECAL trigger primitive digi SOI (overlap);ADC count", 250, 0, 250);
+   ecal_digi_soi_ee = fs->make<TH1D>("ecal_digi_soi_ee",
+         "ECAL trigger primitive digi SOI (endcap);ADC count", 250, 0, 250);
+   ecal_digi_soi_ef = fs->make<TH1D>("ecal_digi_soi_ef",
+         "ECAL trigger primitive digi SOI (forward);ADC count", 250, 0, 250);
 
-   hcal_digi_soi_ = fs->make<TH1D>("hcal_digi_soi",
-         "HCAL trigger primitive digi SOI;ADC count", 250, 0, 250);
-   hcal_digi_0_ = fs->make<TH1D>("hcal_digi_0",
-         "HCAL trigger primitive digi 0;ADC count", 250, 0, 250);
-   hcal_digi_1_ = fs->make<TH1D>("hcal_digi_1",
-         "HCAL trigger primitive digi 1;ADC count", 250, 0, 250);
-   hcal_digi_2_ = fs->make<TH1D>("hcal_digi_2",
-         "HCAL trigger primitive digi 2;ADC count", 250, 0, 250);
-   hcal_digi_3_ = fs->make<TH1D>("hcal_digi_3",
-         "HCAL trigger primitive digi 3;ADC count", 250, 0, 250);
-   hcal_digi_4_ = fs->make<TH1D>("hcal_digi_4",
-         "HCAL trigger primitive digi 4;ADC count", 250, 0, 250);
+   for (int i = 0; i < 5; ++i)
+      ecal_digi_[i] = fs->make<TH1D>(TString::Format("ecal_digi_%d", i),
+            TString::Format("ECAL trigger primitive digi %d;ADC count", i),
+            250, 0, 250);
 
-   hcal_digi_soi_no_hf_ = fs->make<TH1D>("hcal_digi_soi_no_hf",
-         "HCAL trigger primitive digi SOI;ADC count", 250, 0, 250);
-   hcal_digi_0_no_hf_ = fs->make<TH1D>("hcal_digi_0_no_hf",
-         "HCAL trigger primitive digi 0;ADC count", 250, 0, 250);
-   hcal_digi_1_no_hf_ = fs->make<TH1D>("hcal_digi_1_no_hf",
-         "HCAL trigger primitive digi 1;ADC count", 250, 0, 250);
-   hcal_digi_2_no_hf_ = fs->make<TH1D>("hcal_digi_2_no_hf",
-         "HCAL trigger primitive digi 2;ADC count", 250, 0, 250);
-   hcal_digi_3_no_hf_ = fs->make<TH1D>("hcal_digi_3_no_hf",
-         "HCAL trigger primitive digi 3;ADC count", 250, 0, 250);
-   hcal_digi_4_no_hf_ = fs->make<TH1D>("hcal_digi_4_no_hf",
-         "HCAL trigger primitive digi 4;ADC count", 250, 0, 250);
+   hcal_digi_soi_hb = fs->make<TH1D>("hcal_digi_soi_hb",
+         "HCAL trigger primitive digi SOI (barrel);ADC count", 250, 0, 250);
+   hcal_digi_soi_hbhe = fs->make<TH1D>("hcal_digi_soi_hbhe",
+         "HCAL trigger primitive digi SOI (overlap);ADC count", 250, 0, 250);
+   hcal_digi_soi_he = fs->make<TH1D>("hcal_digi_soi_he",
+         "HCAL trigger primitive digi SOI (endcap);ADC count", 250, 0, 250);
+   hcal_digi_soi_hf = fs->make<TH1D>("hcal_digi_soi_hf",
+         "HCAL trigger primitive digi SOI (forward);ADC count", 250, 0, 250);
+
+   for (int i = 0; i < 5; ++i)
+      hcal_digi_[i] = fs->make<TH1D>(TString::Format("hcal_digi_%d", i),
+            TString::Format("HCAL trigger primitive digi %d;ADC count", i),
+            250, 0, 250);
 }
 
 TriggerPrimitiveDigiPlotter::~TriggerPrimitiveDigiPlotter() {}
@@ -167,14 +149,21 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
    } else {
       for (EcalTrigPrimDigiCollection::const_iterator p = ecal_handle_->begin();
             p != ecal_handle_->end(); ++p) {
-         ecal_digi_soi_->Fill(p->compressedEt(), weight);
-         ecal_digi_0_->Fill(p->sample(0).compressedEt(), weight);
-         ecal_digi_1_->Fill(p->sample(1).compressedEt(), weight);
-         ecal_digi_2_->Fill(p->sample(2).compressedEt(), weight);
-         ecal_digi_3_->Fill(p->sample(3).compressedEt(), weight);
-         ecal_digi_4_->Fill(p->sample(4).compressedEt(), weight);
-
          EcalTrigTowerDetId id = p->id();
+         int ieta = abs(id.ieta()) - 1;
+
+         if (ieta < 17)
+            ecal_digi_soi_eb->Fill(p->compressedEt(), weight);
+         else if (ieta < 18)
+            ecal_digi_soi_ebee->Fill(p->compressedEt(), weight);
+         else if (ieta < 29)
+            ecal_digi_soi_ee->Fill(p->compressedEt(), weight);
+         else
+            ecal_digi_soi_ef->Fill(p->compressedEt(), weight);
+
+         for (int i = 0; i < 5; ++i)
+            ecal_digi_[i]->Fill(p->sample(i).compressedEt(), weight);
+
          h_ecal_adc_->Fill(id.ieta(), id.iphi(), p->compressedEt() * weight);
          h_ecal_mp_->Fill(id.ieta(), id.iphi(), weight);
       }
@@ -187,27 +176,24 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
          hcal_digis_ << "'" << std::endl;
    } else {
       SortedCollection<HcalTriggerPrimitiveDigi>::const_iterator p;
-      for (p = hcal_handle_->begin(); p != hcal_handle_->end();
-            ++p) {
-         hcal_digi_soi_->Fill(p->SOI_compressedEt(), weight);
-         hcal_digi_0_->Fill(p->sample(0).compressedEt(), weight);
-         hcal_digi_1_->Fill(p->sample(1).compressedEt(), weight);
-         hcal_digi_2_->Fill(p->sample(2).compressedEt(), weight);
-         hcal_digi_3_->Fill(p->sample(3).compressedEt(), weight);
-         hcal_digi_4_->Fill(p->sample(4).compressedEt(), weight);
-
+      for (p = hcal_handle_->begin(); p != hcal_handle_->end(); ++p) {
          HcalTrigTowerDetId id = p->id();
+         int ieta = abs(id.ieta()) - 1;
+
+         if (ieta < 16)
+            hcal_digi_soi_hb->Fill(p->SOI_compressedEt(), weight);
+         else if (ieta < 17)
+            hcal_digi_soi_hbhe->Fill(p->SOI_compressedEt(), weight);
+         else if (ieta < 29)
+            hcal_digi_soi_he->Fill(p->SOI_compressedEt(), weight);
+         else
+            hcal_digi_soi_hf->Fill(p->SOI_compressedEt(), weight);
+
+         for (int i = 0; i < 5; ++i)
+            hcal_digi_[i]->Fill(p->sample(i).compressedEt(), weight);
+
          h_hcal_adc_->Fill(id.ieta(), id.iphi(), p->SOI_compressedEt() * weight);
          h_hcal_mp_->Fill(id.ieta(), id.iphi(), weight);
-
-         if (id.ieta() > -29 && id.ieta() < 29) {
-            hcal_digi_soi_no_hf_->Fill(p->SOI_compressedEt(), weight);
-            hcal_digi_0_no_hf_->Fill(p->sample(0).compressedEt(), weight);
-            hcal_digi_1_no_hf_->Fill(p->sample(1).compressedEt(), weight);
-            hcal_digi_2_no_hf_->Fill(p->sample(2).compressedEt(), weight);
-            hcal_digi_3_no_hf_->Fill(p->sample(3).compressedEt(), weight);
-            hcal_digi_4_no_hf_->Fill(p->sample(4).compressedEt(), weight);
-         }
       }
    }
 }
