@@ -15,6 +15,7 @@
 <use name="DataFormats/L1GlobalCaloTrigger"/>
 <use name="DataFormats/TrackReco"/>
 <use name="DataFormats/VertexReco"/>
+<use name="Geometry/HcalTowerAlgo"/>
 <use name="PhysicsTools/Utilities"/>
 <use name="boost"/>
 <flags EDM_PLUGIN="1"/>

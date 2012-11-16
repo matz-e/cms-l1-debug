@@ -45,6 +45,8 @@
 #include "DataFormats/HcalDigi/interface/HcalTriggerPrimitiveDigi.h"
 #include "DataFormats/HcalRecHit/interface/HBHERecHit.h"
 
+#include "Geometry/HcalTowerAlgo/interface/HcalTrigTowerGeometry.h"
+
 #include "Debug/Plotters/interface/BasePlotter.h"
 
 #include "TH2F.h"
@@ -69,7 +71,9 @@ class RecHitTPPlotter : public edm::EDAnalyzer, BasePlotter {
       edm::InputTag hcal_digis_;
       edm::InputTag hcal_hits_;
 
-      TH2F *hists_[2 * NETA + 1];
+      TH2F *barrel_;
+      TH2F *endcap_;
+      TH2F *forward_;
 };
 
 RecHitTPPlotter::RecHitTPPlotter(const edm::ParameterSet& config) :
@@ -79,10 +83,12 @@ RecHitTPPlotter::RecHitTPPlotter(const edm::ParameterSet& config) :
    hcal_hits_(config.getParameter<edm::InputTag>("hcalHits"))
 {
    edm::Service<TFileService> fs;
-   for (int i = -NETA; i <= NETA; ++i)
-      hists_[i + NETA] = fs->make<TH2F>(TString::Format("ieta_%d", i),
-            TString::Format("RecHits vs TP (ieta %d);TP [GeV];RecHits [GeV]", i),
-            500, 0, 500, 5000, 0, 500);
+   barrel_ = fs->make<TH2F>("barrel", "RecHits vs TP (barrel);TP [GeV];RecHits [GeV]",
+         500, 0, 500, 5000, 0, 500);
+   endcap_ = fs->make<TH2F>("endcap", "RecHits vs TP (endcap);TP [GeV];RecHits [GeV]",
+         500, 0, 500, 5000, 0, 500);
+   forward_ = fs->make<TH2F>("forward", "RecHits vs TP (forward);TP [GeV];RecHits [GeV]",
+         500, 0, 500, 5000, 0, 500);
 }
 
 RecHitTPPlotter::~RecHitTPPlotter() {}
@@ -97,8 +103,9 @@ RecHitTPPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    tcoder->setup(setup, CaloTPGTranscoder::HcalTPG);
 
    double weight = this->weight(event);
+   HcalTrigTowerGeometry geom;
 
-   std::map< int, std::map< int, std::pair<int, double> > > energies;
+   std::map<int, std::map< int, std::map< int, std::pair<int, double> > > > energies;
 
    edm::Handle< edm::SortedCollection<HBHERecHit> > hits;
    if (!event.getByLabel(hcal_hits_, hits)) {
@@ -109,8 +116,8 @@ RecHitTPPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       for (hit = hits->begin(); hit != hits->end(); ++hit) {
          HcalDetId id = static_cast<HcalDetId>(hit->id());
 
-         if (id.depth() == 1)
-            energies[id.ieta()][id.iphi()].second += hit->energy();
+         if (id.subdet() > 0 && id.subdet() < 4)
+            energies[id.subdet()][id.ieta()][id.iphi()].second += hit->energy();
       }
    }
 
@@ -121,22 +128,40 @@ RecHitTPPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          hcal_digis_ << "'" << std::endl;
    } else {
       SortedCollection<HcalTriggerPrimitiveDigi>::const_iterator p;
-      for (p = hcal_handle_->begin(); p != hcal_handle_->end();
-            ++p) {
+      for (p = hcal_handle_->begin(); p != hcal_handle_->end(); ++p) {
          HcalTrigTowerDetId id = p->id();
-         energies[id.ieta()][id.iphi()].first += 
-            tcoder->hcaletValue(id.ieta(), id.iphi(), p->SOI_compressedEt());
+
+         auto rh_ids = geom.detIds(id);
+         for (auto i = rh_ids.begin(); i != rh_ids.end(); ++i) {
+            if (i->subdet() > 0 && i->subdet() < 4)
+               energies[i->subdet()][i->ieta()][i->iphi()].first += 
+                  tcoder->hcaletValue(id.ieta(), id.iphi(), p->SOI_compressedEt());
+         }
       }
    }
 
-   for (auto i = energies.begin(); i != energies.end(); ++i) {
-      int ieta = i->first;
-      for (auto j = i->second.begin(); j != i->second.end(); ++j) {
-         int tp = j->second.first;
-         double hit = j->second.second;
+   for (auto d = energies.begin(); d != energies.end(); ++d) {
+      int det = d->first;
 
-         if (tp > 0 || hit > 0.)
-            hists_[ieta + NETA]->Fill(tp, hit, weight);
+      for (auto i = d->second.begin(); i != d->second.end(); ++i) {
+         for (auto j = i->second.begin(); j != i->second.end(); ++j) {
+            int tp = j->second.first;
+            double hit = j->second.second;
+
+            if (tp > 0 || hit > 0.) {
+               switch (det) {
+                  case 1:
+                     barrel_->Fill(tp, hit, weight);
+                     break;
+                  case 2:
+                     endcap_->Fill(tp, hit, weight);
+                     break;
+                  case 3:
+                     forward_->Fill(tp, hit, weight);
+                     break;
+               }
+            }
+         }
       }
    }
 }
