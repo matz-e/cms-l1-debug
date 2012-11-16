@@ -1,6 +1,8 @@
 import sys
 
+n = 1000
 data = False
+debug = False
 
 aod = False
 raw = True
@@ -22,6 +24,8 @@ for arg in argv:
         raise "Unknown argument '%s'!" % (k,)
     if type(globals()[k]) == bool:
         globals()[k] = v.lower() in ('y', 'yes', 'true', 't', '1')
+    elif type(globals()[k]) == int:
+        globals()[k] = int(v)
     else:
         globals()[k] = v
 
@@ -35,14 +39,7 @@ process.load('FWCore.MessageLogger.MessageLogger_cfi')
 process.MessageLogger.cerr.FwkReport.reportEvery = 100
 process.MessageLogger.categories.append('L1GtTrigReport')
 
-# process.load("L1Trigger.GlobalTriggerAnalyzer.l1GtTrigReport_cfi")
-# process.l1GtTrigReport.L1GtRecordInputTag = "simGtDigis"
-# process.l1GtTrigReport.PrintVerbosity = 1
-
-# process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(10000))
-process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1000))
-# process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(100))
-# process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1))
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(n))
 
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 process.GlobalTag.connect   = 'frontier://FrontierProd/CMS_COND_31X_GLOBALTAG'
@@ -83,6 +80,7 @@ process.load('Debug.Plotters.TriggerPrimitiveDigiPlotter_cfi')
 
 process.reEmulTrigPrimPlotter = process.triggerPrimitiveDigiPlotter.clone()
 process.reEmulTrigPrimPlotter.ecalDigis = cms.InputTag('gctReEmulDigis')
+process.reEmulTrigPrimPlotter.hcalDigis = cms.InputTag('hcalReEmulDigis', '')
 
 process.reEmulCaloRegionPlotter = process.caloRegionPlotter.clone()
 process.reEmulCaloRegionPlotter.caloRegions = cms.InputTag('rctReEmulDigis')
@@ -147,6 +145,7 @@ process.zerobias = cms.Path(process.ZeroBiasAve)
 if reemul:
     process.load('HLTrigger.Configuration.HLT_FULL_cff')
     process.load('Configuration.StandardSequences.SimL1Emulator_cff')
+    process.load("EventFilter.L1GlobalTriggerRawToDigi.l1GtUnpack_cfi")
 
     import L1Trigger.Configuration.L1Trigger_custom
     process = L1Trigger.Configuration.L1Trigger_custom.customiseL1GtEmulatorFromRaw(process)
@@ -168,8 +167,6 @@ if reemul:
     # process.es_prefer_es_pool2 = cms.ESPrefer( "PoolDBESSource", "es_pool2")
 
     process.unpacker = cms.Path(process.HLTL1UnpackerSequence)
-
-    process.load("EventFilter.L1GlobalTriggerRawToDigi.l1GtUnpack_cfi")
     process.l1unpack = cms.Path(process.l1GtUnpack)
 
 process.dump = cms.EDAnalyzer("EventContentAnalyzer")
@@ -183,8 +180,9 @@ if raw:
 if reemul:
     process.schedule.append(process.unpacker)
     process.schedule.append(process.l1unpack)
+if debug:
+    process.schedule.append(process.pdump)
 
-# process.schedule.append(process.pdump)
 process.schedule.append(process.plotters)
 
 if raw:
