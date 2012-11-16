@@ -7,6 +7,8 @@ raw = True
 reco = False
 reemul = False
 
+wfile = 'Debug/Plotters/scripts/create_plots_mc_weights.root'
+
 if len(sys.argv) > 1 and sys.argv[1].endswith('.py'):
     sys.argv.pop(0)
 if len(sys.argv) == 2 and ':' in sys.argv[1]:
@@ -18,7 +20,10 @@ for arg in argv:
     (k, v) = map(str.strip, arg.split('='))
     if k not in globals():
         raise "Unknown argument '%s'!" % (k,)
-    globals()[k] = v.lower() in ('y', 'yes', 'true', 't', '1')
+    if type(globals()[k]) == bool:
+        globals()[k] = v.lower() in ('y', 'yes', 'true', 't', '1')
+    else:
+        globals()[k] = v
 
 mc = not data
 reemul = reemul or (mc and raw)
@@ -117,7 +122,7 @@ if mc:
     class SetWeights:
         def enter(self, m):
             m.weigh = cms.untracked.bool(True)
-            m.weightFile = cms.untracked.string('create_plots_mc_weights.root')
+            m.weightFile = cms.untracked.string(wfile)
         def leave(self, m):
             pass
 
