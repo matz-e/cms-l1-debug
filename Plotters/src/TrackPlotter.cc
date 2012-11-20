@@ -57,10 +57,6 @@ class TrackPlotter : public edm::EDAnalyzer, BasePlotter {
    private:
       virtual void analyze(const edm::Event&, const edm::EventSetup&);
 
-      template<typename THit, typename TDetId>
-      std::pair<double, double> process_calo(const edm::Event&, const
-            char*, const char*, TH2D*, TH2D*);
-
       // ----------member data ---------------------------
       TH2D* track_en_;
       TH2D* track_mp_;
