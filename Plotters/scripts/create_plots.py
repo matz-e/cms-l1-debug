@@ -1,6 +1,7 @@
 import sys
 
 n = 1000
+pu = 45
 data = False
 debug = False
 
@@ -9,7 +10,7 @@ raw = True
 reco = False
 reemul = False
 
-wfile = 'Debug/Plotters/scripts/create_plots_mc_weights.root'
+wfile = 'Debug/Plotters/scripts/weights_{n}.root'.format(n=pu)
 
 if len(sys.argv) > 1 and sys.argv[1].endswith('.py'):
     sys.argv.pop(0)
@@ -44,13 +45,10 @@ process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(n))
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 process.GlobalTag.connect   = 'frontier://FrontierProd/CMS_COND_31X_GLOBALTAG'
 process.GlobalTag.pfnPrefix = cms.untracked.string('frontier://FrontierProd/')
-# process.GlobalTag.globaltag = cms.string('START44_V13::All')
-# process.GlobalTag.globaltag = cms.string('START44_V6::All')
 if data:
-    process.GlobalTag.globaltag = cms.string('GR_R_52_V10::All')
+    process.GlobalTag.globaltag = cms.string('GR_P_V40::All')
 else:
-    from Configuration.AlCa.autoCond import autoCond
-    process.GlobalTag.globaltag = autoCond['startup']
+    process.GlobalTag.globaltag = cms.string('START53_V7B::All')
 
 # process.load('Configuration.StandardSequences.GeometryExtended_cff')
 # process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
@@ -73,13 +71,17 @@ process.load('SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff')
 process.load('Debug.Plotters.CaloRegionPlotter_cfi')
 process.load('Debug.Plotters.DigiPlotter_cfi')
 process.load('Debug.Plotters.L1GctPlotter_cfi')
+process.load('Debug.Plotters.PileUpPlotter_cfi')
 process.load('Debug.Plotters.RecHitPlotter_cfi')
 process.load('Debug.Plotters.RecHitTPPlotter_cfi')
 process.load('Debug.Plotters.TrackPlotter_cfi')
 process.load('Debug.Plotters.TriggerPrimitiveDigiPlotter_cfi')
 
 process.reEmulTrigPrimPlotter = process.triggerPrimitiveDigiPlotter.clone()
-process.reEmulTrigPrimPlotter.ecalDigis = cms.InputTag('gctReEmulDigis')
+if data:
+    process.reEmulTrigPrimPlotter.ecalDigis = cms.InputTag('gctReEmulDigis')
+else:
+    process.reEmulTrigPrimPlotter.ecalDigis = cms.InputTag('ecalDigis', 'EcalTriggerPrimitives')
 process.reEmulTrigPrimPlotter.hcalDigis = cms.InputTag('hcalReEmulDigis', '')
 
 process.reEmulCaloRegionPlotter = process.caloRegionPlotter.clone()
@@ -106,25 +108,39 @@ if raw:
             process.triggerPrimitiveDigiPlotter * \
             process.caloRegionPlotter * \
             process.gctPlotter
-if reemul:
+if raw and reemul:
     process.plotters *= \
             process.reEmulTrigPrimPlotter * \
             process.reEmulCaloRegionPlotter * \
             process.reEmulGctPlotter
+
 if reco:
     process.plotters *= process.trackPlotter * process.recHitPlotter
 if raw and reco:
     process.plotters *= process.recHitTPPlotter
 
 if mc:
-    class SetWeights:
+    process.plotters *= process.pileUpPlotter
+
+    class CreateWeighted:
+        def __init__(self):
+            self.weighted = []
         def enter(self, m):
-            m.weigh = cms.untracked.bool(True)
-            m.weightFile = cms.untracked.string(wfile)
+            rw = m.clone()
+            rw_label = m.label()
+            rw_label = 'reWeighted' + rw_label[0].upper() + rw_label[1:]
+            rw.setLabel(rw_label)
+            rw.weigh = cms.untracked.bool(True)
+            rw.weightFile = cms.untracked.string(wfile)
+            self.weighted.append(rw)
         def leave(self, m):
             pass
 
-    process.plotters.visit(SetWeights())
+    visitor = CreateWeighted()
+    process.plotters.visit(visitor)
+    for m in visitor.weighted:
+        process.__setattr__(m.label(), m)
+        process.plotters *= m
 
 process.load("L1Trigger.GlobalTriggerAnalyzer.l1GtTrigReport_cfi")
 if reemul:
@@ -172,9 +188,10 @@ if reemul:
 process.dump = cms.EDAnalyzer("EventContentAnalyzer")
 process.pdump = cms.Path(process.dump)
 
-process.schedule = cms.Schedule(
-        process.zerobias)
+process.schedule = cms.Schedule()
 
+if data:
+    process.schedule.append(process.zerobias)
 if raw:
     process.schedule.append(process.raw2digi)
 if reemul:
@@ -190,48 +207,110 @@ if raw:
 
 process.TFileService = cms.Service("TFileService",
         closeFileFast = cms.untracked.bool(True),
-        fileName = cms.string("plots.root"))
+        fileName = cms.string("plots_{d}_{p}.root".format(d='data' if data else 'mc', p=pu)))
 
-if data:
+if data and pu == 45:
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
-                '/store/data/Run2011B/ZeroBiasHPF0/RAW/v1/000/179/828/D091ECAE-39FF-E011-8105-001D09F2A49C.root',
-                '/store/data/Run2011B/ZeroBiasHPF0/RAW/v1/000/179/828/CAC9A8F8-38FF-E011-9D05-003048D3750A.root',
-                '/store/data/Run2011B/ZeroBiasHPF0/RAW/v1/000/179/828/C057138E-37FF-E011-A9A6-001D09F26C5C.root',
-                '/store/data/Run2011B/ZeroBiasHPF0/RAW/v1/000/179/828/BE735C1D-3BFF-E011-873D-BCAEC53296F2.root',
-                '/store/data/Run2011B/ZeroBiasHPF0/RAW/v1/000/179/828/90BCCB91-37FF-E011-8F43-002481E0D90C.root',
-                '/store/data/Run2011B/ZeroBiasHPF0/RAW/v1/000/179/828/8895F0E0-42FF-E011-ACD4-001D09F2AF96.root',
-                '/store/data/Run2011B/ZeroBiasHPF0/RAW/v1/000/179/828/428EB095-34FF-E011-87FB-001D09F291D7.root',
-                '/store/data/Run2011B/ZeroBiasHPF0/RAW/v1/000/179/828/1C9C298C-37FF-E011-B893-001D09F24664.root',
-                '/store/data/Run2011B/ZeroBiasHPF0/RAW/v1/000/179/828/1A49A7B1-39FF-E011-8D22-001D09F25393.root',
-                '/store/data/Run2011B/ZeroBiasHPF0/RAW/v1/000/179/828/088937ED-35FF-E011-BA7A-001D09F24D8A.root',
-                ]),
-            lumisToProcess = cms.untracked.VLuminosityBlockRange(
-                '179828:179-179828:189', '179828:366-179828:366'
-                ))
-else:
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/1EADEC56-1BCA-E111-9692-BCAEC518FF68.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/1E723C8C-1CCA-E111-AF5B-003048CF94A6.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/1C1D7655-1BCA-E111-8C36-001D09F23D1D.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/1AC963F9-1BCA-E111-A617-00215AEDFCCC.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/16D41F92-1ACA-E111-8B7F-0015C5FDE067.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/164A3155-1BCA-E111-B583-001D09F295A1.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/1483DC8C-1ACA-E111-B1AD-BCAEC53296F8.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/107B9052-1BCA-E111-BADB-001D09F248F8.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/100DFA8C-1CCA-E111-AD18-003048678098.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/0EEDFA91-1ACA-E111-A846-001D09F295A1.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/0E2AFE55-1BCA-E111-B902-001D09F2462D.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/0CE3DC51-1BCA-E111-861F-E0CB4E55365C.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/0ADC3E07-1CCA-E111-8666-001D09F2AF96.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/0A178602-1CCA-E111-82A7-001D09F248F8.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/08D703F9-1BCA-E111-912D-E0CB4E5536AE.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/083AB0B4-19CA-E111-9423-001D09F248F8.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/08184950-1BCA-E111-8575-001D09F2915A.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/04A01F55-1BCA-E111-8541-001D09F2905B.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/00EFBD57-1BCA-E111-81DD-003048D3733E.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/00D2FD57-1BCA-E111-8481-003048F118C6.root',
+                ]))
+            # lumisToProcess = cms.untracked.VLuminosityBlockRange(
+                # '179828:179-179828:189', '179828:366-179828:366'
+                # ))
+elif data and pu == 66:
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0000/DEE6A498-F259-E111-96EB-1CC1DE1D0600.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0000/227E66F1-F259-E111-A450-1CC1DE0437C8.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0000/1CE4EBFF-EF59-E111-8E40-001F296A527C.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0001/5C326C5D-F259-E111-94B3-1CC1DE1D16C8.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0003/507724FE-F159-E111-8543-1CC1DE1CDF30.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0003/9A9A4A64-F359-E111-9EA9-1CC1DE1CF280.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0003/64C8D5F5-F259-E111-8820-1CC1DE055158.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0004/B6A5D4C7-F259-E111-8CB0-1CC1DE041FD8.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0004/54375620-F359-E111-ACA2-1CC1DE1CEDB2.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0003/D006977F-F359-E111-9B0B-1CC1DE040FE8.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0003/70BA27A4-F459-E111-A9C7-1CC1DE1CDD02.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0003/4CC63156-F159-E111-8BF0-1CC1DE0503C0.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0004/C068B06E-F359-E111-A8BA-78E7D1E4B874.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0000/CC344013-EC59-E111-A8C7-0017A477103C.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0001/5280B60A-E959-E111-83D6-00237DA1494E.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0002/001706D0-F359-E111-B787-78E7D1651098.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0003/66E6667B-F359-E111-904F-1CC1DE048F98.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0003/20D358F0-EF59-E111-80AF-001F296AC6F2.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0002/4A78AA4A-E359-E111-BFF9-1CC1DE055158.root",
-                "/store/mc/Fall11/Neutrino_Pt_2to20_gun/GEN-SIM-RAW-HLTDEBUG-RECO/E7TeV_Ave23_50ns-v3/0001/F8DDC23B-E459-E111-B849-1CC1DE041F38.root"
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/3C4A28B8-72CA-E111-827A-003048F118AA.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/3848706F-74CA-E111-AEAE-001D09F2527B.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/2AB1ACB6-72CA-E111-8361-5404A638869B.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/2AA64072-74CA-E111-BEE7-BCAEC518FF5F.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/26A74020-74CA-E111-9778-5404A63886B9.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/24CA1463-73CA-E111-A700-003048F11C28.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/2421D4B6-72CA-E111-B939-003048CFB40C.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/22E5C4B8-72CA-E111-894E-003048F11DE2.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/1CCDBF70-74CA-E111-8334-0025901D62A0.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/1A9A53BE-72CA-E111-B173-003048D2C0F4.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/18F82005-71CA-E111-AC70-001D09F34488.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/1467473D-75CA-E111-A572-003048F118C4.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/12C53B00-71CA-E111-9741-001D09F253C0.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/128B8EB8-72CA-E111-A703-BCAEC518FF40.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/102F8715-71CA-E111-A9EF-003048D2BC5C.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/0E2082FE-70CA-E111-AA9C-00215AEDFD98.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/0CC9AA6C-74CA-E111-B56E-BCAEC518FF52.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/0AB01403-71CA-E111-B705-003048F110BE.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/08361F06-71CA-E111-B50E-003048F1C424.root',
+                '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/04F0C0E3-72CA-E111-A802-003048F117EC.root'
+                ]))
+            # lumisToProcess = cms.untracked.VLuminosityBlockRange(
+                # '179828:179-179828:189', '179828:366-179828:366'
+                # ))
+elif mc and pu == 45:
+    process.source = cms.Source('PoolSource',
+            fileNames = cms.untracked.vstring([
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/04853736-9828-E211-A015-003048FFD756.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/047A94A7-9D28-E211-B894-00261894385A.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/046BCF99-A228-E211-A2A1-002618943985.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/0442A929-9E28-E211-BCF3-002618943875.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/0421DA70-E228-E211-BB68-001A92811716.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/04069C54-9E28-E211-92D6-0018F3D09600.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/04067F68-A228-E211-A597-00304867D836.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/02D5AB9A-9E28-E211-9071-00261894390C.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/029734EF-9F28-E211-86CF-002618943874.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/028BD335-9928-E211-BEB4-0026189438C2.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/02717B35-9D28-E211-B1A7-00261894386B.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/024B81D1-F328-E211-9CD3-00261894392D.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/023CB170-9828-E211-BC9D-003048FFCB8C.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/02286BDA-A128-E211-8B61-001A928116B2.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/0227ECE0-9D28-E211-8C62-00261894393A.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/0216B862-A228-E211-B280-002618943979.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/0214A21D-0429-E211-B4D2-001A92810AAA.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/00CB9FB5-A028-E211-A70D-001A928116E6.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/00A47645-9828-E211-9203-003048678C06.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/0046FAB4-9E28-E211-8A5C-003048678F74.root'
+                ]))
+elif mc and pu == 66:
+    process.source = cms.Source('PoolSource',
+            fileNames = cms.untracked.vstring([
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/049AECD1-9C27-E211-9AC5-001A92971B82.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/0417A36C-9C27-E211-8C0B-00304867903E.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/0401D3C0-9C27-E211-BDF9-001A92971B26.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/02FC9F05-9C27-E211-8FF3-002618943960.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/02D7BFBA-9B27-E211-A0B5-003048FFD728.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/02C699F1-9B27-E211-90C9-0026189438F7.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/027B7196-9C27-E211-82ED-001A92971B08.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/0276E95A-9C27-E211-9FF7-002618943908.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/027477F1-9C27-E211-9942-001A92810AB2.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/025505F6-9C27-E211-913F-001A92971BC8.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/023F74CB-9B27-E211-AFAD-002618943821.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/02257BED-9B27-E211-BA26-0026189437E8.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/021BDF6A-9C27-E211-BB75-003048678FF6.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/00DCDAE7-9B27-E211-BC28-002618943869.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/00AB1C9A-9C27-E211-AD73-001A92971B36.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/00814A55-9C27-E211-B5B6-001BFCDBD15E.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/00750835-9C27-E211-883B-002354EF3BDB.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/0041164C-9C27-E211-AA46-002618943982.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/0037F92C-9C27-E211-BF0E-002618943930.root',
+                '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/00124F6F-9C27-E211-A055-003048FFD732.root'
                 ]))
 
-# print process.dumpPython()
+if debug:
+    print process.dumpPython()
