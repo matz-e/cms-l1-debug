@@ -36,8 +36,10 @@
 #include "DataFormats/Common/interface/SortedCollection.h"
 #include "DataFormats/EcalDigi/interface/EcalDigiCollections.h"
 #include "DataFormats/EcalDigi/interface/EcalTriggerPrimitiveDigi.h"
+#include "DataFormats/EcalDetId/interface/EcalSubdetector.h"
 #include "DataFormats/EcalDetId/interface/EcalTrigTowerDetId.h"
 #include "DataFormats/HcalDigi/interface/HcalTriggerPrimitiveDigi.h"
+#include "DataFormats/HcalDetId/interface/HcalSubdetector.h"
 #include "DataFormats/HcalDetId/interface/HcalTrigTowerDetId.h"
 
 #include "Debug/Plotters/interface/BasePlotter.h"
@@ -105,12 +107,8 @@ TriggerPrimitiveDigiPlotter::TriggerPrimitiveDigiPlotter(const edm::ParameterSet
 
    ecal_digi_soi_eb = fs->make<TH1D>("ecal_digi_soi_eb",
          "ECAL trigger primitive digi SOI (barrel);ADC count", 250, 0, 250);
-   ecal_digi_soi_ebee = fs->make<TH1D>("ecal_digi_soi_ebee",
-         "ECAL trigger primitive digi SOI (overlap);ADC count", 250, 0, 250);
    ecal_digi_soi_ee = fs->make<TH1D>("ecal_digi_soi_ee",
          "ECAL trigger primitive digi SOI (endcap);ADC count", 250, 0, 250);
-   ecal_digi_soi_ef = fs->make<TH1D>("ecal_digi_soi_ef",
-         "ECAL trigger primitive digi SOI (forward);ADC count", 250, 0, 250);
 
    for (int i = 0; i < 5; ++i)
       ecal_digi_[i] = fs->make<TH1D>(TString::Format("ecal_digi_%d", i),
@@ -119,8 +117,6 @@ TriggerPrimitiveDigiPlotter::TriggerPrimitiveDigiPlotter(const edm::ParameterSet
 
    hcal_digi_soi_hb = fs->make<TH1D>("hcal_digi_soi_hb",
          "HCAL trigger primitive digi SOI (barrel);ADC count", 250, 0, 250);
-   hcal_digi_soi_hbhe = fs->make<TH1D>("hcal_digi_soi_hbhe",
-         "HCAL trigger primitive digi SOI (overlap);ADC count", 250, 0, 250);
    hcal_digi_soi_he = fs->make<TH1D>("hcal_digi_soi_he",
          "HCAL trigger primitive digi SOI (endcap);ADC count", 250, 0, 250);
    hcal_digi_soi_hf = fs->make<TH1D>("hcal_digi_soi_hf",
@@ -150,16 +146,11 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
       for (EcalTrigPrimDigiCollection::const_iterator p = ecal_handle_->begin();
             p != ecal_handle_->end(); ++p) {
          EcalTrigTowerDetId id = p->id();
-         int ieta = abs(id.ieta()) - 1;
 
-         if (ieta < 17)
+         if (id.subDet() == EcalBarrel)
             ecal_digi_soi_eb->Fill(p->compressedEt(), weight);
-         else if (ieta < 18)
-            ecal_digi_soi_ebee->Fill(p->compressedEt(), weight);
-         else if (ieta < 29)
+         else if (id.subDet() == EcalEndcap)
             ecal_digi_soi_ee->Fill(p->compressedEt(), weight);
-         else
-            ecal_digi_soi_ef->Fill(p->compressedEt(), weight);
 
          for (int i = 0; i < 5; ++i)
             ecal_digi_[i]->Fill(p->sample(i).compressedEt(), weight);
@@ -178,15 +169,12 @@ TriggerPrimitiveDigiPlotter::analyze(const edm::Event& event, const edm::EventSe
       SortedCollection<HcalTriggerPrimitiveDigi>::const_iterator p;
       for (p = hcal_handle_->begin(); p != hcal_handle_->end(); ++p) {
          HcalTrigTowerDetId id = p->id();
-         int ieta = abs(id.ieta()) - 1;
 
-         if (ieta < 16)
+         if (id.subdet() == HcalBarrel)
             hcal_digi_soi_hb->Fill(p->SOI_compressedEt(), weight);
-         else if (ieta < 17)
-            hcal_digi_soi_hbhe->Fill(p->SOI_compressedEt(), weight);
-         else if (ieta < 29)
+         else if (id.subdet() == HcalEndcap)
             hcal_digi_soi_he->Fill(p->SOI_compressedEt(), weight);
-         else
+         else if (id.subdet() == HcalForward)
             hcal_digi_soi_hf->Fill(p->SOI_compressedEt(), weight);
 
          for (int i = 0; i < 5; ++i)

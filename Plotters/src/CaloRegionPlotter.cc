@@ -142,7 +142,7 @@ CaloRegionPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup
          int ieta = r->gctEta();
 
          et_tot += r->et();
-         if (ieta < 4 || ieta > 17) {
+         if (r->isHf()) {
             calo_et_f_->Fill(r->et(), weight);
             et_tot_f += r->et();
          } else if (ieta < 7 || ieta > 14) {
