@@ -91,19 +91,19 @@ CaloRegionPlotter::CaloRegionPlotter(const edm::ParameterSet& config) :
 
    calo_et_tot_ = fs->make<TH1D>("calo_et_tot",
          "#sum E_{T} of calo regions;#sum E_{T} [GeV]",
-         200, 0., 2000.);
+         500, 0., 5000.);
    calo_et_tot_b_ = fs->make<TH1D>("calo_et_tot_b",
          "#sum E_{T} of calo regions (barrel);#sum E_{T} [GeV]",
-         200, 0., 2000.);
+         500, 0., 5000.);
    calo_et_tot_be_ = fs->make<TH1D>("calo_et_tot_be",
          "#sum E_{T} of calo regions (barrel + endcap);#sum E_{T} [GeV]",
-         200, 0., 2000.);
+         500, 0., 5000.);
    calo_et_tot_e_ = fs->make<TH1D>("calo_et_tot_e",
          "#sum E_{T} of calo regions (endcap);#sum E_{T} [GeV]",
-         200, 0., 2000.);
+         500, 0., 5000.);
    calo_et_tot_f_ = fs->make<TH1D>("calo_et_tot_f",
          "#sum E_{T} of calo regions (forward);#sum E_{T} [GeV]",
-         200, 0., 2000.);
+         500, 0., 5000.);
 
    h_calo_et_ = fs->make<TH2D>("calo_region_et",
          "E_{T} of calo regions;#eta;#phi;E_{T} [GeV]",
@@ -152,6 +152,7 @@ CaloRegionPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup
          } else {
             calo_et_b_->Fill(r->et(), weight);
             et_tot_b += r->et();
+            et_tot_be += r->et();
          }
 
          h_calo_et_->Fill(r->gctEta(), r->gctPhi(), weight * r->et());

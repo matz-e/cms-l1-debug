@@ -76,7 +76,7 @@ DigiPlotter::DigiPlotter(const edm::ParameterSet& config) :
 
    for (int i = 0; i < 10; ++i) {
       ecal_digi_[i] = fs->make<TH1D>(TString::Format("ecal_digi_%d", i),
-            TString::Format("ECAL digi %d;ADC count", i), 500, 0, 1000);
+            TString::Format("ECAL digi %d;ADC count", i), 2000, 0, 4000);
       hcal_digi_[i] = fs->make<TH1D>(TString::Format("hcal_digi_%d", i),
             TString::Format("HCAL digi %d;ADC count", i), 500, 0, 500);
    }
