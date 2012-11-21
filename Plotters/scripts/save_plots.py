@@ -34,13 +34,19 @@ def create_stack(hists, files, norms=None, adjustlimits=True, limits=None, logpl
     l = r.TLegend(.1, .1, .9, .9)
     l.SetNColumns(len(files))
 
-    s = MHStack(legend=l, logplot=logplot, limits=limits)
+    stack = MHStack(legend=l, logplot=logplot, limits=limits)
+    stack_rel = MHStack(legend=l, logplot=logplot, limits=limits)
+
     max_x = 0
 
+    norm_hist = None
     for (h, f, n, c) in zip(hists, files, norms, range(1, len(files) + 1)):
         h.SetLineColor(c)
         if normalized:
             h.Scale(1. / n)
+
+        if not norm_hist:
+            norm_hist = h.Clone()
 
         if title == '':
             title = ";".join((h.GetTitle(),
@@ -49,13 +55,21 @@ def create_stack(hists, files, norms=None, adjustlimits=True, limits=None, logpl
 
         max_x = max(max_x, get_xmax(h))
 
-        s.Add(h)
-        s.SetTitle(title)
+        stack.Add(h)
+        stack.SetTitle(title)
+
+        h_rel = h.Clone()
+        h_rel.Divide(norm_hist)
+
+        stack_rel.Add(h_rel)
+        stack_rel.SetTitle(title)
+
         l.AddEntry(h, f, "l")
 
     if not limits and adjustlimits:
-        s.limits = (0, max_x * 1.05)
-    return s
+        stack.limits = (0, max_x * 1.05)
+        stack_rel.limits = (0, max_x * 1.05)
+    return (stack, stack_rel)
 
 def plot_stacks(stacks, filename, width=None):
     if not width:
@@ -64,23 +78,49 @@ def plot_stacks(stacks, filename, width=None):
     else:
         height = int(math.ceil(len(stacks) / float(width)))
 
-    c = r.TCanvas("c", "", width * 600, height * 400)
+    c = r.TCanvas("c", "", width * 600, height * 600)
     c.Divide(width, height)
 
     for (s, n) in zip(stacks, range(1, len(stacks) + 1)):
         c.cd(n)
         p = c.GetPad(n)
-        p.SetTitle(s.GetTitle())
-        p.Divide(1, 2)
+        p.SetTitle(s[0].GetTitle())
+        p.Divide(1, 3)
+
+        p.cd(3)
+        p.GetPad(3).SetPad(0., 0., 1., .1)
+        s[0].legend.Draw()
+        
+        p.cd(1)
+        r.gPad.SetPad(0., .4, 1., 1.)
+        if s[0].logplot:
+            p.GetPad(1).SetLogy(True)
+        s[0].Draw()
+        r.gPad.SetBottomMargin(1e-5)
+        r.gPad.SetTopMargin(.15)
+        r.gPad.SetTickx(2)
+        r.gPad.Modified()
 
         p.cd(2)
-        p.GetPad(2).SetPad(0., 0., 1., .1)
-        s.legend.Draw()
-        p.cd(1)
-        p.GetPad(1).SetPad(0., .1, 1., 1.)
-        if s.logplot:
-            p.GetPad(1).SetLogy(True)
-        s.Draw()
+        p.GetPad(2).SetPad(0., .1, 1., .4)
+        # if s[1].logplot:
+        p.GetPad(2).SetLogy(True)
+        s[1].SetTitle("")
+        s[1].Draw()
+        s[1].GetYaxis().SetTitle("relative")
+        s[1].GetYaxis().SetLabelSize(.08)
+        s[1].GetYaxis().SetTitleOffset(.5)
+        s[1].GetYaxis().SetTitleSize(.08)
+        s[1].GetXaxis().SetLabelSize(.08)
+        s[1].GetXaxis().SetTickLength(.06)
+        s[1].GetXaxis().SetTitleOffset(1.2)
+        s[1].GetXaxis().SetTitleSize(.08)
+        s[1].GetXaxis().SetTitle(s[0].GetXaxis().GetTitle())
+        r.gPad.SetTopMargin(1e-5)
+        r.gPad.SetBottomMargin(.3)
+        r.gPad.SetTickx(1)
+        r.gPad.Modified()
+    c.Update()
     c.SaveAs(filename)
 
 def legend(dir):
@@ -157,7 +197,7 @@ def summarize(pdffile, files):
             continue
         s = create_stack(ps, ls, ns)
         plot_stacks([s], pdffile.format(p=key))
-        s.logplot = True
+        s[0].logplot = True
         plot_stacks([s], pdffile.format(p=key + '_log'))
 
     for plot_dict in (plots_digi, plots_tp):
@@ -174,7 +214,7 @@ def summarize(pdffile, files):
                     continue
                 s = create_stack(ps, ls, ns, limits=limits)
                 plot_stacks([s], pdffile.format(p=real_key))
-                s.logplot = True
+                s[0].logplot = True
                 plot_stacks([s], pdffile.format(p=real_key + '_log'))
 
     for (key, subdict) in plots_2d.items():
@@ -213,7 +253,7 @@ def summarize(pdffile, files):
                     continue
                 s = create_stack(ps, ls, ns, adjustlimits=False, normalized=norm_by_event)
                 plot_stacks([s], pdffile.format(p=real_key))
-                s.logplot = True
+                s[0].logplot = True
                 plot_stacks([s], pdffile.format(p=real_key + '_log'))
         
         # print subdict.keys()
