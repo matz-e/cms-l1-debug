@@ -207,7 +207,7 @@ if raw:
 
 process.TFileService = cms.Service("TFileService",
         closeFileFast = cms.untracked.bool(True),
-        fileName = cms.string("plots_{d}_{p}.root".format(d='data' if data else 'mc', p=pu)))
+        fileName = cms.string("standalone_plots_{d}_{p}.root".format(d='data' if data else 'mc', p=pu)))
 
 if data and pu == 45:
     process.source = cms.Source('PoolSource',
