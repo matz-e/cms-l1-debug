@@ -32,7 +32,7 @@ def get_xmax(hist):
 def create_stack(hists, files, norms=None, adjustlimits=True, limits=None, logplot=False, normalized=True, 
         title=''):
     l = r.TLegend(.1, .1, .9, .9)
-    l.SetNColumns(len(files))
+    l.SetNColumns(min(len(files), 3))
 
     stack = MHStack(legend=l, logplot=logplot, limits=limits)
     stack_rel = MHStack(legend=l, logplot=logplot, limits=limits)
