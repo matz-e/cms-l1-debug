@@ -161,12 +161,12 @@ def summarize(pdffile, files):
         plot_stacks([s], pdffile.format(p=key + '_log'))
 
     for plot_dict in (plots_digi, plots_tp):
-        limits = [0, 0]
-        for subdict in plot_dict.values():
+        for (key, subdict) in plot_dict.items():
+            limits = [0, 0]
             for lst in subdict.values():
                 for tpl in lst:
                     limits[1] = max(limits[1], get_xmax(tpl[0]))
-        for (key, subdict) in plot_dict.items():
+            print key, limits
             for subkey, objs in subdict.items():
                 real_key = '_'.join([key, subkey])
                 ps, ls, ns = zip(*objs) # unzip
