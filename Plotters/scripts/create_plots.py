@@ -5,6 +5,8 @@ pu = 45
 data = False
 debug = False
 
+do_reco = False
+
 aod = False
 raw = True
 reco = False
@@ -37,7 +39,10 @@ import FWCore.ParameterSet.Config as cms
 
 process = cms.Process('PlotPrep')
 process.load('FWCore.MessageLogger.MessageLogger_cfi')
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+if do_reco:
+    process.MessageLogger.cerr.FwkReport.reportEvery = 1
+else:
+    process.MessageLogger.cerr.FwkReport.reportEvery = 100
 process.MessageLogger.categories.append('L1GtTrigReport')
 
 process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(n))
@@ -50,13 +55,25 @@ if data:
 else:
     process.GlobalTag.globaltag = cms.string('START53_V7B::All')
 
-# process.load('Configuration.StandardSequences.GeometryExtended_cff')
+process.load('Configuration.StandardSequences.GeometryExtended_cff')
 # process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 # process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('Configuration.StandardSequences.GeometryDB_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.Reconstruction_cff')
+
+if do_reco:
+    process.GlobalTag.toGet = cms.VPSet(
+            cms.PSet(record = cms.string('EcalSampleMaskRcd'),
+                tag = cms.string('EcalSampleMask_offline'),
+                # connect = cms.untracked.string('oracle://cms_orcoff_prep/CMS_COND_ECAL'),
+                connect = cms.untracked.string('frontier://FrontierPrep/CMS_COND_ECAL'),
+                )
+            )
+    process.GlobalTag.DBParameters.authenticationPath="/afs/cern.ch/cms/DB/conddb"
+    process.ecalGlobalUncalibRecHit.kPoorRecoFlagEB = cms.bool(False)
+    process.ecalGlobalUncalibRecHit.kPoorRecoFlagEE = cms.bool(False)
 
 if data:
     process.load('Configuration.StandardSequences.RawToDigi_Data_cff')
@@ -114,9 +131,9 @@ if raw and reemul:
             process.reEmulCaloRegionPlotter * \
             process.reEmulGctPlotter
 
-if reco:
+if reco or do_reco:
     process.plotters *= process.trackPlotter * process.recHitPlotter
-if raw and reco:
+if (raw and reco) or do_reco:
     process.plotters *= process.recHitTPPlotter
 
 if mc:
@@ -192,13 +209,15 @@ process.schedule = cms.Schedule()
 
 if data:
     process.schedule.append(process.zerobias)
-if raw:
+if raw or do_reco:
     process.schedule.append(process.raw2digi)
 if reemul:
     process.schedule.append(process.unpacker)
     process.schedule.append(process.l1unpack)
 if debug:
     process.schedule.append(process.pdump)
+if do_reco:
+    process.schedule.append(process.reco)
 
 process.schedule.append(process.plotters)
 
