@@ -23,14 +23,29 @@ class MHStack(r.THStack):
         if self.limits:
             self.GetXaxis().SetRangeUser(*self.limits)
 
-def get_xmax(hist):
-    last = hist.GetXaxis().GetXmax()
+def get_limits(hist):
+    x_max = hist.GetXaxis().GetXmax()
+
     i = hist.GetNbinsX()
     while i > 0:
         if hist.GetBinContent(i) > 0:
-            return last
-        last = hist.GetBinLowEdge(i)
+            break
+        x_max = hist.GetBinLowEdge(i)
         i -= 1
+
+    i = 1
+    x_min = 0
+    while x_min < x_max:
+        if hist.GetBinContent(i) > 0:
+            break
+        x_min = hist.GetBinLowEdge(i)
+        i += 1
+
+    extend_by = (x_max - x_min) / 10
+    return (max(0, x_min - extend_by), x_max + extend_by)
+
+def greater(l1, l2):
+    return (min(l1[0], l2[0]), max(l1[1], l2[1]))
 
 def create_stack(hists, files, norms=None, adjustlimits=True, limits=None, logplot=False, normalized=True, 
         title=''):
@@ -40,11 +55,11 @@ def create_stack(hists, files, norms=None, adjustlimits=True, limits=None, logpl
     stack = MHStack(legend=l, logplot=logplot, limits=limits)
     stack_rel = MHStack(legend=l, logplot=logplot, limits=limits)
 
-    max_x = 0
+    new_limits = (float('inf'), 0)
 
     norm_hist = None
     for (h, f, n, c) in zip(hists, files, norms, range(1, len(files) + 1)):
-        h.SetLineColor(c)
+        # h.SetLineColor(c)
         if normalized:
             h.Scale(1. / n)
 
@@ -56,7 +71,7 @@ def create_stack(hists, files, norms=None, adjustlimits=True, limits=None, logpl
                     h.GetXaxis().GetTitle(),
                     h.GetYaxis().GetTitle()))
 
-        max_x = max(max_x, get_xmax(h))
+        new_limits = greater(new_limits, get_limits(h))
 
         stack.Add(h)
         stack.SetTitle(title)
@@ -70,8 +85,8 @@ def create_stack(hists, files, norms=None, adjustlimits=True, limits=None, logpl
         l.AddEntry(h, f, "l")
 
     if not limits and adjustlimits:
-        stack.limits = (0, max_x * 1.05)
-        stack_rel.limits = (0, max_x * 1.05)
+        stack.limits = new_limits
+        stack_rel.limits = new_limits
     return (stack, stack_rel)
 
 def plot_stacks(stacks, filename, width=None):
@@ -99,6 +114,7 @@ def plot_stacks(stacks, filename, width=None):
         if s[0].logplot:
             p.GetPad(1).SetLogy(True)
         s[0].Draw()
+        # s[0].GetHists()[0].Draw("same P")
         r.gPad.SetBottomMargin(1e-5)
         r.gPad.SetTopMargin(.15)
         r.gPad.SetTickx(2)
@@ -110,14 +126,15 @@ def plot_stacks(stacks, filename, width=None):
         p.GetPad(2).SetLogy(True)
         s[1].SetTitle("")
         s[1].Draw()
+        # s[1].GetHists()[0].Draw("same")
         s[1].GetYaxis().SetTitle("relative")
-        s[1].GetYaxis().SetLabelSize(.08)
+        s[1].GetYaxis().SetLabelSize(2 * s[0].GetYaxis().GetLabelSize())
         s[1].GetYaxis().SetTitleOffset(.5)
-        s[1].GetYaxis().SetTitleSize(.08)
-        s[1].GetXaxis().SetLabelSize(.08)
+        s[1].GetYaxis().SetTitleSize(2 * s[0].GetYaxis().GetTitleSize())
+        s[1].GetXaxis().SetLabelSize(2 * s[0].GetXaxis().GetLabelSize())
         s[1].GetXaxis().SetTickLength(.06)
         s[1].GetXaxis().SetTitleOffset(1.2)
-        s[1].GetXaxis().SetTitleSize(.08)
+        s[1].GetXaxis().SetTitleSize(2 * s[0].GetXaxis().GetTitleSize())
         s[1].GetXaxis().SetTitle(s[0].GetXaxis().GetTitle())
         r.gPad.SetTopMargin(1e-5)
         r.gPad.SetBottomMargin(.3)
@@ -226,10 +243,10 @@ def summarize(pdffile, files):
                 if type(obj) == r.TH2F or type(obj) == r.TH2D:
                     key, subkey = key.rsplit('_', 1)
                     plot_dict = plots_2d
-                elif 'tp' in key and 'digi' in key:
+                elif 'tp' in key and 'digi' in key and not 'mp' in key:
                     key, subkey = key.rsplit('_', 1)
                     plot_dict = plots_tp
-                elif 'digi' in key:
+                elif 'digi' in key and not 'mp' in key:
                     key, subkey = key.rsplit('_', 1)
                     plot_dict = plots_digi
                 else:
@@ -255,10 +272,10 @@ def summarize(pdffile, files):
 
     for plot_dict in (plots_digi, plots_tp):
         for (key, subdict) in plot_dict.items():
-            limits = [0, 0]
+            limits = (float('inf'), 0)
             for lst in subdict.values():
                 for tpl in lst:
-                    limits[1] = max(limits[1], get_xmax(tpl[0]))
+                    limits = greater(limits, get_limits(tpl[0]))
             print key, limits
             for subkey, objs in subdict.items():
                 real_key = '_'.join([key, subkey])
