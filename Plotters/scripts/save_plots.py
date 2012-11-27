@@ -175,7 +175,7 @@ def legend(path, hist):
     if 'reemul' in dir.lower():
         color *= 3
         # hist.SetLineStyle(r.kDashed)
-        label += 'reemul.'
+        label += ' reemul.'
 
     hist.SetLineColor(color)
 
