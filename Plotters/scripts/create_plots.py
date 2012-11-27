@@ -88,6 +88,7 @@ process.load('SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff')
 process.load('Debug.Plotters.CaloRegionPlotter_cfi')
 process.load('Debug.Plotters.DigiPlotter_cfi')
 process.load('Debug.Plotters.L1GctPlotter_cfi')
+process.load('Debug.Plotters.L1JetPlotter_cfi')
 process.load('Debug.Plotters.PileUpPlotter_cfi')
 process.load('Debug.Plotters.RecHitPlotter_cfi')
 process.load('Debug.Plotters.RecHitTPPlotter_cfi')
@@ -124,7 +125,8 @@ if raw:
             process.digiPlotter * \
             process.triggerPrimitiveDigiPlotter * \
             process.caloRegionPlotter * \
-            process.gctPlotter
+            process.gctPlotter * \
+            process.jetPlotter
 if raw and reemul:
     process.plotters *= \
             process.reEmulTrigPrimPlotter * \
