@@ -244,6 +244,8 @@ def summarize(pdffile, files):
                 subkey = None
 
                 if type(obj) == r.TH2F or type(obj) == r.TH2D:
+                    if '_' not in key:
+                        continue
                     key, subkey = key.rsplit('_', 1)
                     plot_dict = plots_2d
                 elif 'tp' in key and 'digi' in key and not 'mp' in key:
