@@ -126,24 +126,74 @@ def plot_stacks(stacks, filename, width=None):
     c.Update()
     c.SaveAs(filename)
 
-def legend(dir):
-    r = 'Data' if 'data' in dir else 'MC'
-    if 'data' in dir:
-        n = 604031
+counts = {}
+
+def legend(path, hist):
+    """
+    Create and return a legend label, normalization, and modified histogram
+    based on the latter's path.
+    """
+    f, dir = path.split(':', 1)
+
+    n = counts[f][0]
+    # Hack to get the right normalization for pileup histograms
+    if 'pileup' in f:
+        hist.Scale(1. / hist.Integral())
+        n = 1
+
+    if 'data' in f:
+        label = 'Data'
+        color = 1
+        # hist.SetMarkerSize(3)
+        hist.SetMarkerStyle(r.kFullDotMedium)
+    elif 'reweighted' in dir.lower():
+        label = 'MC rw.'
+        n = counts[f][1]
+        color = 3
     else:
-        n = 49493000
+        label = 'MC'
+        color = 2
 
     if 'reemul' in dir.lower():
-        r += ' (reemulated)'
-    if 'reweighted' in dir.lower():
-        r += ' - reweighted'
+        color *= 3
+        # hist.SetLineStyle(r.kDashed)
+        label += 'reemul.'
 
-    return r, n
+    hist.SetLineColor(color)
 
-alias ={}
+    return label, n, hist
+
+def get_num_events(fn):
+    """
+    Determine the number of events and sum of weights in file ``fn``.  Uses
+    L1 energy sums or number of vertices for this.
+    """
+    c, c_rw = (0, 0)
+    
+    hist = r.gDirectory.Get('{f}:gctPlotter/et_tot'.format(f=fn))
+    hist_rw = r.gDirectory.Get('{f}:reWeightedGctPlotter/et_tot'.format(f=fn))
+    if hist:
+        c = hist.Integral()
+    if hist_rw:
+        c_rw = hist.Integral()
+
+    if c != 0:
+        return (c, c_rw)
+
+    hist = r.gDirectory.Get('{f}:trackPlotter/vertices'.format(f=fn))
+    hist_rw = r.gDirectory.Get('{f}:reWeightedTrackPlotter/vertices'.format(f=fn))
+    if hist:
+        c = hist.Integral()
+    if hist_rw:
+        c_rw = hist.Integral()
+    
+    return (c, c_rw)
 
 def summarize(pdffile, files):
     handles = [r.TFile(fn) for fn in files]
+
+    for fn in files:
+        counts[fn] = get_num_events(fn)
 
     plots = {}
     plots_2d = {}
@@ -157,7 +207,7 @@ def summarize(pdffile, files):
             for k in dir.GetListOfKeys():
                 key = k.GetName()
                 obj = k.ReadObj()
-                leg, norm = legend(path)
+                leg, norm, obj = legend(path, obj)
 
                 if obj.GetEntries() == 0:
                     print "{k} in {p} empty!".format(k=key, p=path)
