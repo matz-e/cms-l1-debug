@@ -71,6 +71,14 @@ class CaloRegionPlotter : public edm::EDAnalyzer, BasePlotter {
       TH1D *calo_et_tot_be_;
       TH1D *calo_et_tot_e_;
       TH1D *calo_et_tot_f_;
+
+      // More fine-grained plots for the endcap
+      TH1D *calo_et_e_1_;
+      TH1D *calo_et_e_2_;
+      TH1D *calo_et_e_3_;
+      TH1D *calo_et_tot_e_1_;
+      TH1D *calo_et_tot_e_2_;
+      TH1D *calo_et_tot_e_3_;
 };
 
 CaloRegionPlotter::CaloRegionPlotter(const edm::ParameterSet& config) :
@@ -105,6 +113,25 @@ CaloRegionPlotter::CaloRegionPlotter(const edm::ParameterSet& config) :
          "#sum E_{T} of calo regions (forward);#sum E_{T} [GeV]",
          500, 0., 5000.);
 
+   calo_et_e_1_ = fs->make<TH1D>("calo_et_e_1",
+         "E_{T} of calo regions (ieta 6, 15);E_{T} [Gev];Num",
+         500, 0., 1000.);
+   calo_et_e_2_ = fs->make<TH1D>("calo_et_e_2",
+         "E_{T} of calo regions (ieta 5, 16);E_{T} [Gev];Num",
+         500, 0., 1000.);
+   calo_et_e_3_ = fs->make<TH1D>("calo_et_e_3",
+         "E_{T} of calo regions (ieta 4, 17);E_{T} [Gev];Num",
+         500, 0., 1000.);
+   calo_et_tot_e_1_ = fs->make<TH1D>("calo_et_tot_e_1",
+         "#sum E_{T} of calo regions (ieta 6, 15);#sum E_{T} [Gev];Num",
+         1000, 0., 5000.);
+   calo_et_tot_e_2_ = fs->make<TH1D>("calo_et_tot_e_2",
+         "#sum E_{T} of calo regions (ieta 5, 16);#sum E_{T} [Gev];Num",
+         1000, 0., 5000.);
+   calo_et_tot_e_3_ = fs->make<TH1D>("calo_et_tot_e_3",
+         "#sum E_{T} of calo regions (ieta 4, 17);#sum E_{T} [Gev];Num",
+         1000, 0., 5000.);
+
    h_calo_et_ = fs->make<TH2D>("calo_region_et",
          "E_{T} of calo regions;#eta;#phi;E_{T} [GeV]",
          22, -.5, 21.5, 18, -.5, 17.5);
@@ -129,6 +156,11 @@ CaloRegionPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup
    double et_tot_be = 0.;
    double et_tot_e = 0.;
    double et_tot_f = 0.;
+
+   double et_tot_e_1 = 0.;
+   double et_tot_e_2 = 0.;
+   double et_tot_e_3 = 0.;
+
    double weight = this->weight(event);
 
    Handle<L1CaloRegionCollection> regions;
@@ -149,6 +181,17 @@ CaloRegionPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup
             calo_et_e_->Fill(r->et(), weight);
             et_tot_e += r->et();
             et_tot_be += r->et();
+
+            if (ieta == 4 || ieta == 17) {
+               calo_et_e_3_->Fill(r->et(), weight);
+               et_tot_e_3 += r->et();
+            } else if (ieta == 5 || ieta == 16) {
+               calo_et_e_2_->Fill(r->et(), weight);
+               et_tot_e_2 += r->et();
+            } else {
+               calo_et_e_1_->Fill(r->et(), weight);
+               et_tot_e_1 += r->et();
+            }
          } else {
             calo_et_b_->Fill(r->et(), weight);
             et_tot_b += r->et();
@@ -166,6 +209,10 @@ CaloRegionPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup
    calo_et_tot_be_->Fill(et_tot_be, weight);
    calo_et_tot_e_->Fill(et_tot_e, weight);
    calo_et_tot_f_->Fill(et_tot_f, weight);
+
+   calo_et_tot_e_1_->Fill(et_tot_e_1, weight);
+   calo_et_tot_e_2_->Fill(et_tot_e_2, weight);
+   calo_et_tot_e_3_->Fill(et_tot_e_3, weight);
 }
 
 void
