@@ -149,6 +149,7 @@ L1JetPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    for (const auto& t: jet_types) {
       edm::InputTag tag(jets_, t);
 
+      // All other L1 jet collections seem to be unsuitable...
       Handle<l1extra::L1JetParticleCollection> jets;
       if (!event.getByLabel(tag, jets)) {
          LogError("L1JetPlotter") <<
