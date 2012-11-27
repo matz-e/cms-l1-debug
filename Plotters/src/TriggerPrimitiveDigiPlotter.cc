@@ -118,10 +118,10 @@ TriggerPrimitiveDigiPlotter::TriggerPrimitiveDigiPlotter(const edm::ParameterSet
          "ECAL trigger primitive digi SOI (endcap);ADC count;Num", 500, 0, 1000);
    ecal_digi_mp_soi_eb = fs->make<TH1D>("ecal_tp_digi_mp_soi_eb",
          "ECAL trigger primitive digi SOI counts (barrel);# of TP digis;Num", 2500, 0, 5000);
-   ecal_digi_mp_soi_ee = fs->make<TH1D>("ecal_tp_digi_mp_soi_ee;Num",
-         "ECAL trigger primitive digi SOI counts (endcap);# of TP digis", 2500, 0, 5000);
-   ecal_digi_mp_soi_ebee = fs->make<TH1D>("ecal_tp_digi_mp_soi_ebee;Num",
-         "ECAL trigger primitive digi SOI counts (barrel + endcap);# of TP digis", 2500, 0, 5000);
+   ecal_digi_mp_soi_ee = fs->make<TH1D>("ecal_tp_digi_mp_soi_ee",
+         "ECAL trigger primitive digi SOI counts (endcap);# of TP digis;Num", 2500, 0, 5000);
+   ecal_digi_mp_soi_ebee = fs->make<TH1D>("ecal_tp_digi_mp_soi_ebee",
+         "ECAL trigger primitive digi SOI counts (barrel + endcap);# of TP digis;Num", 2500, 0, 5000);
 
    for (int i = 0; i < 5; ++i)
       ecal_digi_[i] = fs->make<TH1D>(TString::Format("ecal_tp_digi_%d", i),
