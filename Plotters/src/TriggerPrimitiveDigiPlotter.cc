@@ -113,43 +113,43 @@ TriggerPrimitiveDigiPlotter::TriggerPrimitiveDigiPlotter(const edm::ParameterSet
          65, -32.5, 32.5, 72, 0.5, 72.5);
 
    ecal_digi_soi_eb = fs->make<TH1D>("ecal_tp_digi_soi_eb",
-         "ECAL trigger primitive digi SOI (barrel);ADC count", 500, 0, 1000);
+         "ECAL trigger primitive digi SOI (barrel);ADC count;Num", 500, 0, 1000);
    ecal_digi_soi_ee = fs->make<TH1D>("ecal_tp_digi_soi_ee",
-         "ECAL trigger primitive digi SOI (endcap);ADC count", 500, 0, 1000);
+         "ECAL trigger primitive digi SOI (endcap);ADC count;Num", 500, 0, 1000);
    ecal_digi_mp_soi_eb = fs->make<TH1D>("ecal_tp_digi_mp_soi_eb",
-         "ECAL trigger primitive digi SOI counts (barrel);# of TP digis", 2500, 0, 5000);
-   ecal_digi_mp_soi_ee = fs->make<TH1D>("ecal_tp_digi_mp_soi_ee",
+         "ECAL trigger primitive digi SOI counts (barrel);# of TP digis;Num", 2500, 0, 5000);
+   ecal_digi_mp_soi_ee = fs->make<TH1D>("ecal_tp_digi_mp_soi_ee;Num",
          "ECAL trigger primitive digi SOI counts (endcap);# of TP digis", 2500, 0, 5000);
-   ecal_digi_mp_soi_ebee = fs->make<TH1D>("ecal_tp_digi_mp_soi_ebee",
+   ecal_digi_mp_soi_ebee = fs->make<TH1D>("ecal_tp_digi_mp_soi_ebee;Num",
          "ECAL trigger primitive digi SOI counts (barrel + endcap);# of TP digis", 2500, 0, 5000);
 
    for (int i = 0; i < 5; ++i)
       ecal_digi_[i] = fs->make<TH1D>(TString::Format("ecal_tp_digi_%d", i),
-            TString::Format("ECAL trigger primitive digi %d;ADC count", i),
+            TString::Format("ECAL trigger primitive digi %d;ADC count;Num", i),
             500, 0, 1000);
 
    hcal_digi_soi_hb = fs->make<TH1D>("hcal_tp_digi_soi_hb",
-         "HCAL trigger primitive digi SOI (barrel);ADC count", 500, 0, 1000);
+         "HCAL trigger primitive digi SOI (barrel);ADC count;Num", 500, 0, 1000);
    hcal_digi_soi_hbhe = fs->make<TH1D>("hcal_tp_digi_soi_hbhe",
-         "HCAL trigger primitive digi SOI (overlap);ADC count", 500, 0, 1000);
+         "HCAL trigger primitive digi SOI (overlap);ADC count;Num", 500, 0, 1000);
    hcal_digi_soi_he = fs->make<TH1D>("hcal_tp_digi_soi_he",
-         "HCAL trigger primitive digi SOI (endcap);ADC count", 500, 0, 1000);
+         "HCAL trigger primitive digi SOI (endcap);ADC count;Num", 500, 0, 1000);
    hcal_digi_soi_hf = fs->make<TH1D>("hcal_tp_digi_soi_hf",
-         "HCAL trigger primitive digi SOI (forward);ADC count", 500, 0, 1000);
+         "HCAL trigger primitive digi SOI (forward);ADC count;Num", 500, 0, 1000);
    hcal_digi_mp_soi_tot = fs->make<TH1D>("hcal_tp_digi_mp_soi_tot",
-         "HCAL trigger primitive digi SOI counts;# of TP digis", 1500, 0, 3000);
+         "HCAL trigger primitive digi SOI counts;# of TP digis;Num", 1500, 0, 3000);
    hcal_digi_mp_soi_hb = fs->make<TH1D>("hcal_tp_digi_mp_soi_hb",
-         "HCAL trigger primitive digi SOI counts (barrel);# of TP digis", 1500, 0, 3000);
+         "HCAL trigger primitive digi SOI counts (barrel);# of TP digis;Num", 1500, 0, 3000);
    hcal_digi_mp_soi_hbhe = fs->make<TH1D>("hcal_tp_digi_mp_soi_hbhe",
-         "HCAL trigger primitive digi SOI counts (overlap);# of TP digis", 1500, 0, 3000);
+         "HCAL trigger primitive digi SOI counts (overlap);# of TP digis;Num", 1500, 0, 3000);
    hcal_digi_mp_soi_he = fs->make<TH1D>("hcal_tp_digi_mp_soi_he",
-         "HCAL trigger primitive digi SOI counts (endcap);# of TP digis", 1500, 0, 3000);
+         "HCAL trigger primitive digi SOI counts (endcap);# of TP digis;Num", 1500, 0, 3000);
    hcal_digi_mp_soi_hf = fs->make<TH1D>("hcal_tp_digi_mp_soi_hf",
-         "HCAL trigger primitive digi SOI counts (forward);# of TP digis", 1500, 0, 3000);
+         "HCAL trigger primitive digi SOI counts (forward);# of TP digis;Num", 1500, 0, 3000);
 
    for (int i = 0; i < 5; ++i)
       hcal_digi_[i] = fs->make<TH1D>(TString::Format("hcal_tp_digi_%d", i),
-            TString::Format("HCAL trigger primitive digi %d;ADC count", i),
+            TString::Format("HCAL trigger primitive digi %d;ADC count;Num", i),
             500, 0, 1000);
 }
 

@@ -79,10 +79,10 @@ TrackPlotter::TrackPlotter(const edm::ParameterSet& config) :
    track_mp_ = fs->make<TH2D>("track_mp", "Multiplicity of tracks",
          40, -3.2, 3.2, 40, -3.2, 3.2);
 
-   pt_tot_ = fs->make<TH1D>("pt_tot", "#sum p_{T} per event;#sum p_{T} [GeV]",
+   pt_tot_ = fs->make<TH1D>("pt_tot", "#sum p_{T} per event;#sum p_{T} [GeV];Num",
          150, 0., 1500.);
-   tracks_ = fs->make<TH1D>("tracks", "# of tracks;n_{tracks}", 300, 0, 300);
-   vertices_ = fs->make<TH1D>("vertices", "# of vertices;n_{vertices}", 100, 0, 100);
+   tracks_ = fs->make<TH1D>("tracks", "# of tracks;n_{tracks};Num", 300, 0, 300);
+   vertices_ = fs->make<TH1D>("vertices", "# of vertices;n_{vertices};Num", 100, 0, 100);
 }
 
 TrackPlotter::~TrackPlotter() {}

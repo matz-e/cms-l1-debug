@@ -68,7 +68,7 @@ PileUpPlotter::PileUpPlotter(const edm::ParameterSet& config) :
    pileup_(config.getParameter<edm::InputTag>("PVT"))
 {
    edm::Service<TFileService> fs;
-   interactions_ = fs->make<TH1D>("pileup", "PileUp;# of true interactions",
+   interactions_ = fs->make<TH1D>("pileup", "PileUp;# of true interactions;Num",
          150, 0., 150.);
 }
 

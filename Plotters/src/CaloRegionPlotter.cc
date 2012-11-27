@@ -88,29 +88,29 @@ CaloRegionPlotter::CaloRegionPlotter(const edm::ParameterSet& config) :
 {
    edm::Service<TFileService> fs;
    calo_et_b_ = fs->make<TH1D>("calo_et_b",
-         "E_{T} of calo regions (barrel); E_{T} [GeV]",
+         "E_{T} of calo regions (barrel);E_{T} [GeV];Num",
          400, 0., 2000.);
    calo_et_e_ = fs->make<TH1D>("calo_et_e",
-         "E_{T} of calo regions (endcap); E_{T} [GeV]",
+         "E_{T} of calo regions (endcap);E_{T} [GeV];Num",
          400, 0., 2000.);
    calo_et_f_ = fs->make<TH1D>("calo_et_f",
-         "E_{T} of calo regions (forward); E_{T} [GeV]",
+         "E_{T} of calo regions (forward);E_{T} [GeV];Num",
          400, 0., 2000.);
 
    calo_et_tot_ = fs->make<TH1D>("calo_et_tot",
-         "#sum E_{T} of calo regions;#sum E_{T} [GeV]",
+         "#sum E_{T} of calo regions;#sum E_{T} [GeV];Num",
          500, 0., 5000.);
    calo_et_tot_b_ = fs->make<TH1D>("calo_et_tot_b",
-         "#sum E_{T} of calo regions (barrel);#sum E_{T} [GeV]",
+         "#sum E_{T} of calo regions (barrel);#sum E_{T} [GeV];Num",
          500, 0., 5000.);
    calo_et_tot_be_ = fs->make<TH1D>("calo_et_tot_be",
-         "#sum E_{T} of calo regions (barrel + endcap);#sum E_{T} [GeV]",
+         "#sum E_{T} of calo regions (barrel + endcap);#sum E_{T} [GeV];Num",
          500, 0., 5000.);
    calo_et_tot_e_ = fs->make<TH1D>("calo_et_tot_e",
-         "#sum E_{T} of calo regions (endcap);#sum E_{T} [GeV]",
+         "#sum E_{T} of calo regions (endcap);#sum E_{T} [GeV];Num",
          500, 0., 5000.);
    calo_et_tot_f_ = fs->make<TH1D>("calo_et_tot_f",
-         "#sum E_{T} of calo regions (forward);#sum E_{T} [GeV]",
+         "#sum E_{T} of calo regions (forward);#sum E_{T} [GeV];Num",
          500, 0., 5000.);
 
    calo_et_e_1_ = fs->make<TH1D>("calo_et_e_1",

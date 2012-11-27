@@ -94,13 +94,13 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
    hcal_mp_ = fs->make<TH2D>("hcal_mp", "Multiplicity of HCAL;#eta;#phi;Multiplicity",
 	 59, -29.5, 29.5, 36, 0.5, 72.5);
 
-   ecal_en_tot_ = fs->make<TH1D>("ecal_en_tot", "Total energy in ECAL;E [GeV]",
+   ecal_en_tot_ = fs->make<TH1D>("ecal_en_tot", "Total energy in ECAL;E [GeV];Num",
          350, 0., 3500.);
-   ecal_hits_ = fs->make<TH1D>("ecal_hits", "Hits per event in the ECAL;n_{hits}",
+   ecal_hits_ = fs->make<TH1D>("ecal_hits", "Hits per event in the ECAL;n_{hits};Num",
          350, 0, 7000);
-   hcal_en_tot_ = fs->make<TH1D>("hcal_en_tot", "Total energy in HCAL;E [GeV]",
+   hcal_en_tot_ = fs->make<TH1D>("hcal_en_tot", "Total energy in HCAL;E [GeV];Num",
          350, 0., 3500.);
-   hcal_hits_ = fs->make<TH1D>("hcal_hits", "Hits per event in the HCAL;n_{hits}",
+   hcal_hits_ = fs->make<TH1D>("hcal_hits", "Hits per event in the HCAL;n_{hits};Num",
          200, 0, 2000);
 }
 

@@ -67,9 +67,9 @@ L1GctPlotter::L1GctPlotter(const edm::ParameterSet& config) :
    gct_(config.getParameter<edm::InputTag>("l1GctSums"))
 {
    edm::Service<TFileService> fs;
-   et_had_ = fs->make<TH1D>("et_had", "HTT;HTT [GeV]", 1000, 0., 4000.);
-   et_miss_ = fs->make<TH1D>("et_miss", "ETM;ETM [GeV]", 1000, 0., 4000.);
-   et_tot_ = fs->make<TH1D>("et_tot", "ETT;ETT [GeV]", 1000, 0., 4000.);
+   et_had_ = fs->make<TH1D>("et_had", "HTT;HTT [GeV];Num", 1000, 0., 4000.);
+   et_miss_ = fs->make<TH1D>("et_miss", "ETM;ETM [GeV];Num", 1000, 0., 4000.);
+   et_tot_ = fs->make<TH1D>("et_tot", "ETT;ETT [GeV];Num", 1000, 0., 4000.);
 }
 
 
