@@ -5,7 +5,10 @@ import os.path
 import ROOT as r
 
 r.gROOT.SetBatch()
-r.gROOT.SetStyle('Plain')
+r.gROOT.SetStyle('Modern')
+
+r.gStyle.SetTitleBorderSize(0)
+# r.gStyle.SetTitleAlign(22)
 
 class MHStack(r.THStack):
     def __init__(self, name='', title='', legend=None, logplot=False,
