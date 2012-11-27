@@ -62,6 +62,7 @@ def create_stack(hists, files, norms=None, adjustlimits=True, limits=None, logpl
         # h.SetLineColor(c)
         if normalized:
             h.Scale(1. / n)
+            h.SetYTitle(h.GetYaxis().GetTitle() + ' / event')
 
         if not norm_hist:
             norm_hist = h.Clone()
@@ -293,8 +294,16 @@ def summarize(pdffile, files):
                 plot_stacks([s], pdffile.format(p=real_key + '_log'))
 
     for (key, subdict) in plots_2d.items():
-        projs = {'ieta': lambda h: h.ProjectionX().Clone(),
-                'iphi': lambda h: h.ProjectionY().Clone()}
+        class FixedProj:
+            def __init__(self, proj):
+                self.__proj = proj
+            def __call__(self, hist):
+                p = self.__proj(hist).Clone()
+                p.SetYTitle(hist.GetZaxis().GetTitle())
+                return p
+
+        projs = {'ieta': FixedProj(r.TH2.ProjectionX),
+                 'iphi': FixedProj(r.TH2.ProjectionY)}
 
         mps = subdict['mp']
         for other in subdict.keys():
@@ -311,8 +320,19 @@ def summarize(pdffile, files):
             # subkey one of (mp, et, adc, ...)
             for subkey, objs in subdict.items():
                 norm_by_event = '_' not in subkey
-                # print subkey
                 real_key = '_'.join([key, subkey, axis])
+
+                if 'digi' in real_key or 'tp' in real_key \
+                        or 'ecal' in real_key or 'hcal' in real_key:
+                    quant = 'digi'
+                elif 'calo' in real_key:
+                    quant = 'region'
+                elif 'track' in real_key:
+                    quant = 'track'
+                else:
+                    print real_key
+                    raise
+
                 if not norm_by_event:
                     tmp_ps, ls, ns = zip(*objs)
                     ps = []
@@ -320,6 +340,7 @@ def summarize(pdffile, files):
                         tmp_v = proj(val)
                         tmp_m = proj(mp)
                         tmp_v.Divide(tmp_m)
+                        tmp_v.SetYTitle(val.GetZaxis().GetTitle() + ' / ' + quant)
                         ps.append(tmp_v)
                 else:
                     ps, ls, ns = zip(*objs) # unzip
