@@ -230,8 +230,11 @@ def summarize(pdffile, files):
                     print "{k} in {p} empty!".format(k=key, p=path)
 
                 if 'trig' in path.lower():
-                    key = 'tp_' + key
-                    if 'reemulated' in leg:
+                    # TODO remove hotfix after fixing hist naming in
+                    # analyzer
+                    if 'tp' not in key:
+                        key = 'tp_' + key
+                    if 'reemul' in leg:
                         continue
 
                 # TODO remove hotfix after fixing analyzer
