@@ -12,7 +12,7 @@ raw = True
 reco = False
 reemul = False
 
-wfile = 'Debug/Plotters/scripts/weights_{n}.root'.format(n=pu)
+wfile = 'Debug/Plotters/test/weights_{n}.root'.format(n=pu)
 
 if len(sys.argv) > 1 and sys.argv[1].endswith('.py'):
     sys.argv.pop(0)
