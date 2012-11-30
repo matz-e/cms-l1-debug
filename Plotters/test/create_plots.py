@@ -225,6 +225,7 @@ if data:
     process.schedule.append(process.zerobias)
 if raw or do_reco:
     process.schedule.append(process.raw2digi)
+    process.schedule.append(process.l1extra)
 if reemul:
     process.schedule.append(process.unpacker)
     process.schedule.append(process.l1unpack)
