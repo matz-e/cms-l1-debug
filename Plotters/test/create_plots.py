@@ -98,11 +98,10 @@ process.load('Debug.Plotters.RecHitTPPlotter_cfi')
 process.load('Debug.Plotters.TrackPlotter_cfi')
 process.load('Debug.Plotters.TriggerPrimitiveDigiPlotter_cfi')
 
+process.jetPlotter.l1Jets = cms.untracked.string('l1extraParticles')
+
 process.reEmulTrigPrimPlotter = process.triggerPrimitiveDigiPlotter.clone()
-if data:
-    process.reEmulTrigPrimPlotter.ecalDigis = cms.InputTag('gctReEmulDigis')
-else:
-    process.reEmulTrigPrimPlotter.ecalDigis = cms.InputTag('ecalDigis', 'EcalTriggerPrimitives')
+process.reEmulTrigPrimPlotter.ecalDigis = cms.InputTag('ecalDigis', 'EcalTriggerPrimitives')
 process.reEmulTrigPrimPlotter.hcalDigis = cms.InputTag('hcalReEmulDigis', '')
 
 process.reEmulCaloRegionPlotter = process.caloRegionPlotter.clone()
@@ -110,6 +109,9 @@ process.reEmulCaloRegionPlotter.caloRegions = cms.InputTag('rctReEmulDigis')
 
 process.reEmulGctPlotter = process.gctPlotter.clone()
 process.reEmulGctPlotter.l1GctSums = cms.InputTag('gctReEmulDigis')
+
+process.reEmulJetPlotter = process.jetPlotter.clone()
+process.reEmulJetPlotter.l1Jets = cms.untracked.string('hltL1extraParticles')
 
 process.triggerPrimitiveDigiPlotter.ecalDigis = cms.InputTag(
         'ecalDigis', 'EcalTriggerPrimitives')
@@ -134,7 +136,8 @@ if raw and reemul:
     process.plotters *= \
             process.reEmulTrigPrimPlotter * \
             process.reEmulCaloRegionPlotter * \
-            process.reEmulGctPlotter
+            process.reEmulGctPlotter * \
+            process.reEmulJetPlotter
 
 if reco or do_reco:
     process.plotters *= process.trackPlotter * process.recHitPlotter
@@ -183,7 +186,7 @@ process.zerobias = cms.Path(process.ZeroBiasAve)
 if reemul:
     process.load('HLTrigger.Configuration.HLT_FULL_cff')
     process.load('Configuration.StandardSequences.SimL1Emulator_cff')
-    process.load("EventFilter.L1GlobalTriggerRawToDigi.l1GtUnpack_cfi")
+    process.load('EventFilter.L1GlobalTriggerRawToDigi.l1GtUnpack_cfi')
 
     import L1Trigger.Configuration.L1Trigger_custom
     process = L1Trigger.Configuration.L1Trigger_custom.customiseL1GtEmulatorFromRaw(process)
@@ -206,6 +209,12 @@ if reemul:
 
     process.unpacker = cms.Path(process.HLTL1UnpackerSequence)
     process.l1unpack = cms.Path(process.l1GtUnpack)
+
+process.load('L1Trigger.L1ExtraFromDigis.l1extraParticles_cff')
+# process.l1extraParticles.forwardJetSource = cms.InputTag('gctReEmulDigis', 'forJets')
+# process.l1extraParticles.centralJetSource = cms.InputTag('gctReEmulDigis', 'cenJets')
+# process.l1extraParticles.tauJetSource = cms.InputTag('gctReEmulDigis', 'tauJets')
+process.l1extra = cms.Path(process.l1extraParticles)
 
 process.dump = cms.EDAnalyzer("EventContentAnalyzer")
 process.pdump = cms.Path(process.dump)
