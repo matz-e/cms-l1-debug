@@ -1,7 +1,7 @@
 import sys
 
 n = 1000
-pu = 45
+pu = '45'
 data = False
 debug = False
 
@@ -233,7 +233,7 @@ process.TFileService = cms.Service("TFileService",
         closeFileFast = cms.untracked.bool(True),
         fileName = cms.string("standalone_plots_{d}_{p}.root".format(d='data' if data else 'mc', p=pu)))
 
-if data and pu == 45:
+if data and pu == '45':
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
                 '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/1EADEC56-1BCA-E111-9692-BCAEC518FF68.root',
@@ -260,7 +260,7 @@ if data and pu == 45:
             # lumisToProcess = cms.untracked.VLuminosityBlockRange(
                 # '179828:179-179828:189', '179828:366-179828:366'
                 # ))
-elif data and pu == 66:
+elif data and pu == '66':
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
                 '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/3C4A28B8-72CA-E111-827A-003048F118AA.root',
@@ -287,7 +287,122 @@ elif data and pu == 66:
             # lumisToProcess = cms.untracked.VLuminosityBlockRange(
                 # '179828:179-179828:189', '179828:366-179828:366'
                 # ))
-elif mc and pu == 45:
+elif data and pu == 'low':
+    process.source = cms.Source('PoolSource',
+            fileNames = cms.untracked.vstring([
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/FCEF0A4B-1084-E111-83B4-E0CB4E5536AE.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/FA21A724-1F84-E111-AD0E-003048F117EC.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/F89B48BA-2984-E111-AE96-003048D2BDD8.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/F6343A2E-3284-E111-BCD6-003048F118C6.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/F454B050-2184-E111-BB9A-BCAEC518FF65.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/EE9555B2-1184-E111-83AE-BCAEC518FF44.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/EC068C54-0B84-E111-9BF5-001D09F2841C.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/E4FC910E-3084-E111-B00E-BCAEC518FF50.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/E2EE4DF0-1F84-E111-9D44-003048678098.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/E2E0D8F0-1A84-E111-B1EE-001D09F29533.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/E04FEAF9-1584-E111-906D-0019B9F70468.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/DEA28EE3-0E84-E111-8F07-BCAEC5329719.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/D4740890-2084-E111-8308-003048F1110E.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/D2F895FE-0B84-E111-9229-E0CB4E55365D.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/D0D8F3EF-1A84-E111-B0BD-0025901D5D80.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/CE8FFC16-1884-E111-8763-0025901D5D7E.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/CCFE3878-1284-E111-9391-5404A638869C.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/CC76E9D3-2484-E111-B3C3-001D09F2841C.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/CC50E5D7-1384-E111-9C82-E0CB4E553651.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/C8A93544-0784-E111-8EAF-BCAEC518FF89.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/C86BB5C8-1884-E111-A85A-003048F1BF66.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/C49EEF48-0784-E111-8673-003048F01E88.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/C48D3094-2C84-E111-AB6D-003048F11C28.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/C488DE3E-1584-E111-B715-003048D2C020.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/C0AF3FDE-3284-E111-9ABA-003048F118D4.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/BE606E50-0B84-E111-87E9-001D09F2915A.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/BE486D66-0984-E111-9E6A-5404A63886CB.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/BE468800-2E84-E111-9FA0-003048D2BE12.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/BCEE680D-1D84-E111-847D-001D09F2983F.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/BC956DEB-1F84-E111-858A-003048D2C16E.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/BAF27156-2884-E111-AE2A-001D09F29524.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/BA008C4B-1084-E111-B50D-003048F117F6.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/B4C8D82E-3284-E111-8FEA-0025901D626C.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/B4AA22FC-1084-E111-97F3-BCAEC518FF6E.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/B27E2F45-0784-E111-99F6-BCAEC5329716.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/B229C9BA-2984-E111-ABB7-003048D2BD66.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/AC62D1EA-1384-E111-877A-BCAEC5364C4C.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/AA0E622E-0984-E111-B3EE-BCAEC518FF65.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/A8507FBA-2984-E111-9E3E-003048D2C01E.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/A64D34FF-3484-E111-9211-003048F118D4.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/A489B921-2B84-E111-A9E5-BCAEC518FF74.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/9E05ECA9-2784-E111-8827-0025B32445E0.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/98FC9CF3-4084-E111-8995-001D09F24D4E.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/96F82600-2E84-E111-A634-003048F117B6.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/96E10FD3-2484-E111-A3B6-001D09F295FB.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/96DF3201-3584-E111-A84B-003048F1BF66.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/94264CFC-2184-E111-B32C-5404A63886AE.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/8EFBD78E-2084-E111-892A-003048F11112.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/8A31E25C-2F84-E111-960F-003048F118C2.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/8A27C073-1784-E111-A7A3-00215AEDFD98.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/86F92E62-2384-E111-9C10-BCAEC5329700.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/84045B31-1A84-E111-AC34-0025901D5D7E.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/82B7B7B9-2984-E111-B880-003048F118E0.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/7E40460D-1D84-E111-92DF-001D09F248F8.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/7AE014A4-1B84-E111-9C67-001D09F24D67.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/789CC2BA-3384-E111-B172-5404A640A648.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/723F2223-1F84-E111-AC78-001D09F244DE.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/6CEBB1EE-0984-E111-86EC-003048D2BC42.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/6AA3CEC6-1884-E111-84D1-001D09F29597.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/6A8F357D-1984-E111-A6CE-001D09F2424A.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/6A5CA57C-1984-E111-BC41-5404A640A642.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/6660E163-2384-E111-80F2-5404A63886C1.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/64311749-3484-E111-8D68-0025901D629C.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/606A21B8-3584-E111-9C42-003048F1110E.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/5AEF48F8-2184-E111-AA4B-5404A63886EC.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/583008A9-2784-E111-B998-002481E0D73C.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/5814F454-0684-E111-85F1-001D09F2B2CF.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/5667A0D7-2B84-E111-ACF0-BCAEC532971F.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/54E09066-0D84-E111-9E96-0025901D5C80.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/52AFD35C-2F84-E111-B3F3-003048F1C58C.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/52150C2E-2484-E111-BFF0-003048D3C944.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/4EEE658E-0884-E111-891C-001D09F2447F.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/4C442AB8-0C84-E111-9E59-003048F24A04.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/4C2856A5-1484-E111-A15C-001D09F25479.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/4A77387C-3184-E111-9E3F-001D09F2910A.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/4A2BBC7C-1284-E111-936A-BCAEC532971F.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/422D83C1-0784-E111-AAB5-002481E0D7D8.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/421E86E4-0984-E111-B722-003048D37456.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/40A47F2E-2484-E111-8141-003048D3751E.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/4074B930-0E84-E111-9C43-E0CB4E4408E7.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/40369B23-1384-E111-9305-BCAEC518FF8E.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/3EACF4E6-0E84-E111-9A09-5404A63886A0.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/3C205156-1C84-E111-B409-003048F0258C.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/3640F577-1E84-E111-B65F-001D09F34488.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/30F590FE-0B84-E111-81CB-5404A63886CF.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/2E8A8AA3-1B84-E111-A8E8-0019B9F72CE5.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/2AD9408B-0F84-E111-BB0C-BCAEC5364CFB.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/28F41271-2A84-E111-90F5-002481E94C7E.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/20497F47-0E84-E111-A7BA-BCAEC518FF41.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/1E7E0214-1884-E111-AB7C-003048F1182E.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/1E41629F-0A84-E111-8868-003048F024E0.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/18946F48-0784-E111-A553-485B39897227.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/12E82174-1784-E111-A088-003048D3C980.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/12A1DC64-0D84-E111-A571-0025901D6272.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/10806F22-2B84-E111-9D42-003048F024C2.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/0EEE6C94-2C84-E111-9FAE-BCAEC518FF50.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/0E42AD6A-0D84-E111-A2BC-001D09F2305C.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/0E0CBA55-2884-E111-ADC1-001D09F2AF1E.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/0C2158F6-2184-E111-9518-5404A63886A0.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/0AEDB96D-4284-E111-B0C5-003048F1110E.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/0A631907-2984-E111-8A1A-003048F024DA.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/08388CAC-2E84-E111-A4C6-003048F1C58C.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/00BF62C3-3084-E111-8D66-BCAEC518FF8A.root',
+                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/00A1CFF8-1584-E111-9EA0-001D09F25479.root'
+                ]),
+            lumisToProcess = cms.untracked.VLuminosityBlockRange(
+                    '190949:221-190949:1132'))
+elif mc and pu == 'low':
+    process.source = cms.Source('PoolSource',
+            fileNames = cms.untracked.vstring([
+                'SingleNuPt10_cfi_GEN_SIM_PU_RAW.root'
+                ]))
+elif mc and pu == '45':
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
                 '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/04853736-9828-E211-A015-003048FFD756.root',
@@ -311,7 +426,7 @@ elif mc and pu == 45:
                 '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/00A47645-9828-E211-9203-003048678C06.root',
                 '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/0046FAB4-9E28-E211-8A5C-003048678F74.root'
                 ]))
-elif mc and pu == 66:
+elif mc and pu == '66':
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
                 '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/049AECD1-9C27-E211-9AC5-001A92971B82.root',
