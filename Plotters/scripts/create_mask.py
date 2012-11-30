@@ -8,23 +8,31 @@ import sys
 
 from RecoLuminosity.LumiDB.pileupParser import pileupParser
 
+all_runs = False
+
 try:
     pileup = float(sys.argv[1])
     epsilon = float(sys.argv[2])
 
-    with open(sys.argv[3], 'r') as f:
-        runs = map(int, f.readlines())
-    with open(sys.argv[4], 'r') as f:
-        data = pileupParser(f.read()).runsandls()
+    if len(sys.argv) == 4:
+        runs = []
+        all_runs = True
+        with open(sys.argv[3], 'r') as f:
+            data = pileupParser(f.read()).runsandls()
+    else:
+        with open(sys.argv[3], 'r') as f:
+            runs = map(int, f.readlines())
+        with open(sys.argv[4], 'r') as f:
+            data = pileupParser(f.read()).runsandls()
 except:
-    sys.stderr.write('usage: {p} pileup epsilon runfile pileupfile\n'.format(
+    sys.stderr.write('usage: {p} pileup epsilon [runfile] pileupfile\n'.format(
         p=sys.argv[0]))
     sys.exit(1)
 
 res = {}
 
 for (run, lsinfo) in data.iteritems():
-    if run not in runs:
+    if not ((run in runs) or all_runs):
         continue
 
     for (ls, info) in sorted(lsinfo.iteritems(), key=lambda (a, b): a):
