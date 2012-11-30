@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Use with pileup data from e.g.:
 https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions12/8TeV/PileUp/
