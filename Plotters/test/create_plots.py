@@ -12,7 +12,10 @@ raw = True
 reco = False
 reemul = False
 
-wfile = 'Debug/Plotters/test/weights_{n}.root'.format(n=pu)
+wfile = 'please set me'
+
+# Argument parsing
+# vvv
 
 if len(sys.argv) > 1 and sys.argv[1].endswith('.py'):
     sys.argv.pop(0)
@@ -31,6 +34,9 @@ for arg in argv:
         globals()[k] = int(v)
     else:
         globals()[k] = v
+
+if wfile == 'please set me':
+    wfile = 'Debug/Plotters/test/weights_{n}.root'.format(n=pu)
 
 mc = not data
 reemul = reemul or (mc and raw)
