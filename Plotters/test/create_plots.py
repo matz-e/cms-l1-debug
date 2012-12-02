@@ -306,17 +306,8 @@ elif data and pu == '66':
 elif data and pu == 'low':
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
-                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/C8A93544-0784-E111-8EAF-BCAEC518FF89.root',
-                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/C49EEF48-0784-E111-8673-003048F01E88.root',
-                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/B27E2F45-0784-E111-99F6-BCAEC5329716.root',
-                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/AA0E622E-0984-E111-B3EE-BCAEC518FF65.root',
-                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/5814F454-0684-E111-85F1-001D09F2B2CF.root',
-                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/422D83C1-0784-E111-AAB5-002481E0D7D8.root',
-                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/40369B23-1384-E111-9305-BCAEC518FF8E.root',
-                '/store/data/Run2012A/MinimumBias/RAW/v1/000/190/949/18946F48-0784-E111-A553-485B39897227.root'
-                ]),
-            lumisToProcess = cms.untracked.VLuminosityBlockRange(
-                    '190949:221-190949:250')) # end was: 1132'))
+                'file:skim_0bias.root'
+                ]))
 elif mc and pu == 'low':
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
