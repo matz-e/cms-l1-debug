@@ -95,6 +95,7 @@ process.reco = cms.Path(process.reconstruction)
 process.load('SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff')
 
 process.load('Debug.Plotters.CaloRegionPlotter_cfi')
+process.load('Debug.Plotters.CaloRegionCmpPlotter_cfi')
 process.load('Debug.Plotters.DigiPlotter_cfi')
 process.load('Debug.Plotters.L1GctPlotter_cfi')
 process.load('Debug.Plotters.L1JetPlotter_cfi')
@@ -140,6 +141,7 @@ if raw:
             process.jetPlotter
 if raw and reemul:
     process.plotters *= \
+            process.caloRegionCmpPlotter * \
             process.reEmulTrigPrimPlotter * \
             process.reEmulCaloRegionPlotter * \
             process.reEmulGctPlotter * \
