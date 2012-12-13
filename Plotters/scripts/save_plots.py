@@ -10,6 +10,10 @@ r.gROOT.SetStyle('Modern')
 r.gStyle.SetTitleBorderSize(0)
 # r.gStyle.SetTitleAlign(22)
 
+override_limits = {
+        'ecal_en_tot': (0, 750)
+        }
+
 class MHStack(r.THStack):
     def __init__(self, name='', title='', legend=None, logplot=False,
             limits=None):
@@ -271,7 +275,10 @@ def summarize(pdffile, files):
         ps, ls, ns = zip(*objs) # unzip
         if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F]:
             continue
-        s = create_stack(ps, ls, ns)
+        if key in override_limits:
+            s = create_stack(ps, ls, ns, limits=override_limits[key])
+        else:
+            s = create_stack(ps, ls, ns)
         plot_stacks([s], pdffile.format(p=key))
         s[0].logplot = True
         plot_stacks([s], pdffile.format(p=key + '_log'))
