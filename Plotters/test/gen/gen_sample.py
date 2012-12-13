@@ -2,6 +2,7 @@
 import sys
 
 pu = 10.0
+mode = 'poisson'
 inputfiles = 'set me'
 
 # Argument parsing
@@ -115,6 +116,7 @@ process.mix.input.fileNames = cms.untracked.vstring(
         # map(str.strip, open(inputfiles).readlines()))
 
 process.mix.input.nbPileupEvents = cms.PSet(averageNumber = cms.double(pu))
+process.mix.input.type = cms.string(mode)
 
 # Path and EndPath definitions
 process.digitisation_step = cms.Path(process.pdigi)
