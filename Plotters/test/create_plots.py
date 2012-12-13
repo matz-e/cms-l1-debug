@@ -26,6 +26,7 @@ raw = True
 reco = False
 reemul = False
 
+ofile = 'please set me'
 wfile = 'please set me'
 
 # Argument parsing
@@ -49,6 +50,8 @@ for arg in argv:
     else:
         globals()[k] = v
 
+if ofile == 'please set me':
+    ofile = 'standalone_plots_{d}_{p}.root'.format(d='data' if data else 'mc', p=pu)
 
 mc = not data
 reemul = reemul or (mc and raw)
@@ -263,7 +266,7 @@ if raw:
 
 process.TFileService = cms.Service("TFileService",
         closeFileFast = cms.untracked.bool(True),
-        fileName = cms.string("standalone_plots_{d}_{p}.root".format(d='data' if data else 'mc', p=pu)))
+        fileName = cms.string(ofile))
 
 if data and pu == '45':
     process.source = cms.Source('PoolSource',
