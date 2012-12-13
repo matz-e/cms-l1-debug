@@ -38,7 +38,6 @@
 
 #include "Debug/Plotters/interface/BasePlotter.h"
 
-#include "TH2D.h"
 #include "TH1D.h"
 #include "TNtuple.h"
 
@@ -58,6 +57,7 @@ class PileUpPlotter : public edm::EDAnalyzer, BasePlotter {
 
       // ----------member data ---------------------------
       TH1D* interactions_;
+      TH1D* true_interactions_;
 
       edm::InputTag pileup_;
 };
@@ -68,7 +68,9 @@ PileUpPlotter::PileUpPlotter(const edm::ParameterSet& config) :
    pileup_(config.getParameter<edm::InputTag>("PVT"))
 {
    edm::Service<TFileService> fs;
-   interactions_ = fs->make<TH1D>("pileup", "PileUp;# of true interactions;Num",
+   interactions_ = fs->make<TH1D>("pileup", "PileUp;# of PU interactions;Num",
+         150, 0., 150.);
+   true_interactions_ = fs->make<TH1D>("interactions", "PileUp;# of true interactions;Num",
          150, 0., 150.);
 }
 
@@ -91,6 +93,7 @@ PileUpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    for (auto i = pu->begin(); i != pu->end(); ++i) {
       if (i->getBunchCrossing() == 0) {
          interactions_->Fill(i->getPU_NumInteractions(), weight);
+         true_interactions_->Fill(i->getTrueNumInteractions(), weight);
       }
    }
 }
