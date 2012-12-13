@@ -45,10 +45,8 @@ for arg in argv:
         raise "Unknown argument '%s'!" % (k,)
     if type(globals()[k]) == bool:
         globals()[k] = v.lower() in ('y', 'yes', 'true', 't', '1')
-    elif type(globals()[k]) == int:
-        globals()[k] = int(v)
     else:
-        globals()[k] = v
+        globals()[k] = type(globals()[k])(v)
 
 if ofile == 'please set me':
     ofile = 'standalone_plots_{d}_{p}.root'.format(d='data' if data else 'mc', p=pu)
