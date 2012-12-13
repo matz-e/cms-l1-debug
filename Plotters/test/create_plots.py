@@ -1,4 +1,18 @@
+#!/usr/bin/env python
 import sys
+
+"""
+The parameters can be changed by adding commandline arguments of the form
+::
+
+    create_plots.py n=-1 pu=low
+
+or ::
+
+    create_plots.py n=-1:wfile=foo.root
+
+The latter can be used to change parameters in crab.
+"""
 
 n = 1000
 pu = '45'
