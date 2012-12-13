@@ -49,8 +49,6 @@ for arg in argv:
     else:
         globals()[k] = v
 
-if wfile == 'please set me':
-    wfile = 'Debug/Plotters/test/weights_{n}.root'.format(n=pu)
 
 mc = not data
 reemul = reemul or (mc and raw)
@@ -169,25 +167,27 @@ if (raw and reco) or do_reco:
 if mc:
     process.plotters *= process.pileUpPlotter
 
-    class CreateWeighted:
-        def __init__(self):
-            self.weighted = []
-        def enter(self, m):
-            rw = m.clone()
-            rw_label = m.label()
-            rw_label = 'reWeighted' + rw_label[0].upper() + rw_label[1:]
-            rw.setLabel(rw_label)
-            rw.weigh = cms.untracked.bool(True)
-            rw.weightFile = cms.untracked.string(wfile)
-            self.weighted.append(rw)
-        def leave(self, m):
-            pass
+    import os.path
+    if os.path.exists(wfile) and os.path.isfile(wfile):
+        class CreateWeighted:
+            def __init__(self):
+                self.weighted = []
+            def enter(self, m):
+                rw = m.clone()
+                rw_label = m.label()
+                rw_label = 'reWeighted' + rw_label[0].upper() + rw_label[1:]
+                rw.setLabel(rw_label)
+                rw.weigh = cms.untracked.bool(True)
+                rw.weightFile = cms.untracked.string(wfile)
+                self.weighted.append(rw)
+            def leave(self, m):
+                pass
 
-    visitor = CreateWeighted()
-    process.plotters.visit(visitor)
-    for m in visitor.weighted:
-        process.__setattr__(m.label(), m)
-        process.plotters *= m
+        visitor = CreateWeighted()
+        process.plotters.visit(visitor)
+        for m in visitor.weighted:
+            process.__setattr__(m.label(), m)
+            process.plotters *= m
 
 process.load("L1Trigger.GlobalTriggerAnalyzer.l1GtTrigReport_cfi")
 if reemul:
