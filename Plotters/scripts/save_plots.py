@@ -329,8 +329,10 @@ def summarize(pdffile, files):
                     quant = 'region'
                 elif 'track' in real_key:
                     quant = 'track'
+                elif 'jet' in real_key:
+                    quant = 'jet'
                 else:
-                    print real_key
+                    sys.stderr.write('Please add a quantity assignment for "{k}"\n.'.format(k=real_key))
                     raise
 
                 if not norm_by_event:
