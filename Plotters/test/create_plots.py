@@ -25,6 +25,7 @@ aod = False
 raw = True
 reco = False
 reemul = False
+sim = False
 
 ofile = 'please set me'
 wfile = 'please set me'
@@ -117,6 +118,11 @@ process.load('Debug.Plotters.RecHitPlotter_cfi')
 process.load('Debug.Plotters.RecHitTPPlotter_cfi')
 process.load('Debug.Plotters.TrackPlotter_cfi')
 process.load('Debug.Plotters.TriggerPrimitiveDigiPlotter_cfi')
+process.load('Debug.Plotters.TriggerPrimitiveDigiCmpPlotter_cfi')
+
+if sim:
+    process.triggerPrimitiveDigiCmpPlotter.hcalDigis = cms.InputTag(
+            'simHcalTriggerPrimitiveDigis', '')
 
 process.jetPlotter.l1Jets = cms.untracked.string('l1extraParticles')
 
@@ -158,7 +164,8 @@ if raw and reemul:
             process.reEmulTrigPrimPlotter * \
             process.reEmulCaloRegionPlotter * \
             process.reEmulGctPlotter * \
-            process.reEmulJetPlotter
+            process.reEmulJetPlotter * \
+            process.triggerPrimitiveDigiCmpPlotter
 
 if reco or do_reco:
     process.plotters *= process.trackPlotter * process.recHitPlotter
