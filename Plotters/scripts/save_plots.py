@@ -1,7 +1,36 @@
 #!/usr/bin/env python
 
+mc_cmp = False
+
+# Argument parsing
+# vvv
+
+import sys
+
+if len(sys.argv) > 1 and sys.argv[1].endswith('.py'):
+    sys.argv.pop(0)
+if len(sys.argv) == 2 and ':' in sys.argv[1]:
+    argv = sys.argv[1].split(':')
+else:
+    argv = sys.argv[1:]
+
+new_args = []
+for arg in argv:
+    if '=' not in arg:
+        new_args.append(arg)
+        continue
+
+    (k, v) = map(str.strip, arg.split('='))
+    if k not in globals():
+        raise "Unknown argument '%s'!" % (k,)
+    if type(globals()[k]) == bool:
+        globals()[k] = v.lower() in ('y', 'yes', 'true', 't', '1')
+    else:
+        globals()[k] = type(globals()[k])(v)
+
 import math
 import os.path
+import re
 import ROOT as r
 
 r.gROOT.SetBatch()
@@ -54,7 +83,7 @@ def greater(l1, l2):
 def create_stack(hists, files, norms=None, adjustlimits=True, limits=None, logplot=False, normalized=True, 
         title=''):
     l = r.TLegend(.1, .1, .9, .9)
-    l.SetNColumns(min(len(files), 3))
+    l.SetNColumns(min(len(files), 3 if not mc_cmp else 4))
 
     stack = MHStack(legend=l, logplot=logplot, limits=limits)
     stack_rel = MHStack(legend=l, logplot=logplot, limits=limits)
@@ -148,6 +177,8 @@ def plot_stacks(stacks, filename, width=None):
     c.Update()
     c.SaveAs(filename)
 
+last_color = 0
+colors = {}
 counts = {}
 
 def legend(path, hist):
@@ -156,6 +187,7 @@ def legend(path, hist):
     based on the latter's path.
     """
     f, dir = path.split(':', 1)
+    basedir, histname = dir.lower().split('/', 1)
 
     n = counts[f][0]
     # Hack to get the right normalization for pileup histograms
@@ -170,14 +202,34 @@ def legend(path, hist):
         hist.SetMarkerStyle(r.kFullDotMedium)
     elif 'reweighted' in dir.lower():
         label = 'MC rw.'
-        n = counts[f][1]
-        color = 3
     else:
         label = 'MC'
         color = 2
 
-    if 'reemul' in dir.lower():
-        color *= 3
+    if mc_cmp:
+        m = re.search(r'Tune[^_]+', f)
+        if not m:
+            raise
+
+        label = m.group(0)
+
+        if 'reweighted' in dir.lower():
+            label += ' rw.'
+
+        if f not in colors:
+            globals()['last_color'] += 1
+            colors[f] = last_color
+        color = colors[f]
+
+    if 'reemul' in basedir:
+        basedir = basedir.replace('reemul', '')
+        if mc_cmp:
+            color += 10
+        else:
+            if label == 'Data':
+                color = 16
+            else:
+                color *= 3
         # hist.SetLineStyle(r.kDashed)
         label += ' reemul.'
 
@@ -363,12 +415,9 @@ def summarize(pdffile, files):
         
         # print subdict.keys()
 
-if __name__ == '__main__':
-    import sys
+if len(sys.argv) < 3:
+    sys.stderr.write(
+            "usage: {p} output file...\n".format(p=sys.argv[0]))
+    sys.exit(1)
 
-    if len(sys.argv) < 3:
-        sys.stderr.write(
-                "usage: {p} output file...\n".format(p=sys.argv[0]))
-        sys.exit(1)
-
-    summarize(sys.argv[1], sys.argv[2:])
+summarize(new_args[0], new_args[1:])
