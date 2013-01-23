@@ -29,6 +29,7 @@ for arg in argv:
         globals()[k] = type(globals()[k])(v)
 
 import math
+import os
 import os.path
 import re
 import ROOT as r
@@ -124,6 +125,10 @@ def create_stack(hists, files, norms=None, adjustlimits=True, limits=None, logpl
     return (stack, stack_rel)
 
 def plot_stacks(stacks, filename, width=None):
+    dirname = os.path.dirname(filename)
+    if not os.path.isdir(dirname):
+        os.makedirs(dirname)
+
     if not width:
         height = 1
         width = len(stacks)
@@ -187,7 +192,7 @@ def legend(path, hist):
     based on the latter's path.
     """
     f, dir = path.split(':', 1)
-    basedir, histname = dir.lower().split('/', 1)
+    basedir = dir.lower().strip('/')
 
     n = counts[f][0]
     # Hack to get the right normalization for pileup histograms
@@ -235,7 +240,7 @@ def legend(path, hist):
 
     hist.SetLineColor(color)
 
-    return label, n, hist
+    return label, n, basedir, hist
 
 def get_num_events(fn):
     """
@@ -281,7 +286,7 @@ def summarize(pdffile, files):
             for k in dir.GetListOfKeys():
                 key = k.GetName()
                 obj = k.ReadObj()
-                leg, norm, obj = legend(path, obj)
+                leg, norm, basedir, obj = legend(path, obj)
 
                 if obj.GetEntries() == 0:
                     print "{k} in {p} empty!".format(k=key, p=path)
@@ -319,21 +324,21 @@ def summarize(pdffile, files):
                 if subkey:
                     if subkey not in plot_dict[key]:
                         plot_dict[key][subkey] = []
-                    plot_dict[key][subkey].append((obj, leg, norm))
+                    plot_dict[key][subkey].append((obj, leg, norm, basedir))
                 else:
-                    plot_dict[key].append((obj, leg, norm))
+                    plot_dict[key].append((obj, leg, norm, basedir))
 
     for key, objs in plots.items():
-        ps, ls, ns = zip(*objs) # unzip
+        ps, ls, ns, ds = zip(*objs) # unzip
         if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F]:
             continue
         if key in override_limits:
             s = create_stack(ps, ls, ns, limits=override_limits[key])
         else:
             s = create_stack(ps, ls, ns)
-        plot_stacks([s], pdffile.format(p=key))
+        plot_stacks([s], pdffile.format(p=key, d=ds[0]))
         s[0].logplot = True
-        plot_stacks([s], pdffile.format(p=key + '_log'))
+        plot_stacks([s], pdffile.format(p=key + '_log', d=ds[0]))
 
     for plot_dict in (plots_digi, plots_tp):
         for (key, subdict) in plot_dict.items():
@@ -344,13 +349,13 @@ def summarize(pdffile, files):
             print key, limits
             for subkey, objs in subdict.items():
                 real_key = '_'.join([key, subkey])
-                ps, ls, ns = zip(*objs) # unzip
+                ps, ls, ns, ds = zip(*objs) # unzip
                 if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F]:
                     continue
                 s = create_stack(ps, ls, ns, limits=limits)
-                plot_stacks([s], pdffile.format(p=real_key))
+                plot_stacks([s], pdffile.format(p=real_key, d=ds[0]))
                 s[0].logplot = True
-                plot_stacks([s], pdffile.format(p=real_key + '_log'))
+                plot_stacks([s], pdffile.format(p=real_key + '_log', d=ds[0]))
 
     for (key, subdict) in plots_2d.items():
         class FixedProj:
@@ -395,7 +400,7 @@ def summarize(pdffile, files):
                     raise
 
                 if not norm_by_event:
-                    tmp_ps, ls, ns = zip(*objs)
+                    tmp_ps, ls, ns, ds = zip(*objs)
                     ps = []
                     for (val, mp) in tmp_ps:
                         tmp_v = proj(val)
@@ -404,14 +409,14 @@ def summarize(pdffile, files):
                         tmp_v.SetYTitle(val.GetZaxis().GetTitle() + ' / ' + quant)
                         ps.append(tmp_v)
                 else:
-                    ps, ls, ns = zip(*objs) # unzip
+                    ps, ls, ns, ds = zip(*objs) # unzip
                     ps = map(proj, ps)
                 if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F]:
                     continue
                 s = create_stack(ps, ls, ns, adjustlimits=False, normalized=norm_by_event)
-                plot_stacks([s], pdffile.format(p=real_key))
+                plot_stacks([s], pdffile.format(p=real_key, d=ds[0]))
                 s[0].logplot = True
-                plot_stacks([s], pdffile.format(p=real_key + '_log'))
+                plot_stacks([s], pdffile.format(p=real_key + '_log', d=ds[0]))
         
         # print subdict.keys()
 
