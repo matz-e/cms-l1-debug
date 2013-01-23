@@ -146,9 +146,9 @@ TriggerPrimitiveDigiCmpPlotter::analyze(const edm::Event& event, const edm::Even
       return;
    }
 
-   std::cout << "HCAL TP size: " << hcal_handle_->size() << std::endl;
-   std::cout << "HCAL reemulated TP size: " << hcal_reemul_handle_->size()
-      << std::endl;
+   // std::cout << "HCAL TP size: " << hcal_handle_->size() << std::endl;
+   // std::cout << "HCAL reemulated TP size: " << hcal_reemul_handle_->size()
+      // << std::endl;
 
    std::map<HcalTrigTowerDetId, int> adcs;
    for (const auto& p: *(hcal_handle_.product())) {
@@ -164,9 +164,9 @@ TriggerPrimitiveDigiCmpPlotter::analyze(const edm::Event& event, const edm::Even
    for (const auto& p: *(hcal_reemul_handle_.product())) {
       HcalTrigTowerDetId id = p.id();
       if (adcs.find(id) == adcs.end()) {
-         std::cout << "Unmatched: " << id << std::endl;
+         // std::cout << "Unmatched: " << id << std::endl;
       } else if (done.find(id) != done.end()) {
-         std::cout << "Reemulated duplicate: " << id << std::endl;
+         // std::cout << "Reemulated duplicate: " << id << std::endl;
       } else {
          done.insert(id);
 
@@ -181,8 +181,12 @@ TriggerPrimitiveDigiCmpPlotter::analyze(const edm::Event& event, const edm::Even
             // continue;
          // }
          
-         double diff = double(p.SOI_compressedEt()) - adcs[id];
+         double diff = adcs[id] - double(p.SOI_compressedEt());
          double ratio = diff / p.SOI_compressedEt();
+
+         // if (diff > 0 and id.iphi() == 13 and id.ieta() == -16) {
+            // std::cout << "difference: " << diff << std::endl;
+         // }
 
          hcal_digi_diff_dist_mp_->Fill(id.ieta(), id.iphi(), weight);
          hcal_digi_diff_dist_avg_->Fill(id.ieta(), id.iphi(), diff * weight);
