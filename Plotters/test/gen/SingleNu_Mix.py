@@ -34,10 +34,7 @@ process.maxEvents = cms.untracked.PSet(
 
 # Input source
 process.source = cms.Source("EmptySource")
-
-process.options = cms.untracked.PSet(
-
-)
+process.options = cms.untracked.PSet()
 
 # Production Info
 process.configurationMetadata = cms.untracked.PSet(
@@ -51,11 +48,11 @@ process.configurationMetadata = cms.untracked.PSet(
 process.FEVTDEBUGHLToutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
-    outputCommands = process.FEVTDEBUGHLTEventContent.outputCommands,
+    outputCommands = process.GENRAWEventContent.outputCommands,
     fileName = cms.untracked.string('SingleNuPt10_cfi_GEN_SIM_PU_RAW.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
-        dataTier = cms.untracked.string('GEN-SIM-DIGI-RAW-HLTDEBUG')
+        dataTier = cms.untracked.string('GEN-RAW')
     ),
     SelectEvents = cms.untracked.PSet(
         SelectEvents = cms.vstring('generation_step')
@@ -64,7 +61,7 @@ process.FEVTDEBUGHLToutput = cms.OutputModule("PoolOutputModule",
 
 # Additional output definition
 
-process.FEVTDEBUGHLToutput.outputCommands.append('keep *')
+process.FEVTDEBUGHLToutput.outputCommands.append('keep *_simHcalTriggerPrimitiveDigis_*_*')
 
 # Other statements
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
@@ -87,14 +84,11 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
     firstRun = cms.untracked.uint32(1)
 )
 
-process.mix.input.fileNames = cms.untracked.vstring(['/store/relval/CMSSW_5_2_1/RelValMinBias/GEN-SIM/START52_V4-v1/0003/4C958749-9872-E111-A747-003048F1183E.root', '/store/relval/CMSSW_5_2_1/RelValMinBias/GEN-SIM/START52_V4-v1/0002/5A081FCB-6772-E111-9623-0025B3244166.root'])
+process.mix.input.fileNames = cms.untracked.vstring([
+    '/store/relval/CMSSW_5_3_3_patch2-START53_V9_SL6/RelValMinBias/GEN-SIM/v1/0000/9414E6A8-05F3-E111-8E15-003048F2E688.root'
+    ])
 
-process.mix.input.nbPileupEvents = cms.PSet(
-                    averageNumber = cms.double(4.0)
-                                            )
-
-from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:startup', '')
+process.mix.input.nbPileupEvents = cms.PSet(averageNumber = cms.double(4.0))
 
 # Path and EndPath definitions
 process.digitisation_step = cms.Path(process.pdigi)
@@ -126,4 +120,3 @@ process = customizeHLTforMC(process)
 # filter all path with the production filter sequence
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq 
-
