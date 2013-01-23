@@ -62,6 +62,7 @@ class DigiPlotter : public edm::EDAnalyzer, BasePlotter {
 
       TH1D *ecal_digi_[10];
       TH1D *hcal_digi_[10];
+      TH1D *hcal_digi_ieta_[10][8];
 };
 
 DigiPlotter::DigiPlotter(const edm::ParameterSet& config) :
@@ -79,6 +80,13 @@ DigiPlotter::DigiPlotter(const edm::ParameterSet& config) :
             TString::Format("ECAL digi %d;ADC count;Num", i), 2000, 0, 4000);
       hcal_digi_[i] = fs->make<TH1D>(TString::Format("hcal_digi_%d", i),
             TString::Format("HCAL digi %d;ADC count;Num", i), 500, 0, 500);
+   }
+
+   for (int j = 0; j < 8; ++j) {
+      for (int i = 0; i < 10; ++i) {
+         hcal_digi_ieta_[i][j] = fs->make<TH1D>(TString::Format("hcal_digi_ieta%d_%d", j + 1, i),
+               TString::Format("HCAL digi %d (%d <= ieta <= %d);ADC count;Num", i, j * 4 + 1, (j + 1) * 4), 500, 0, 500);
+      }
    }
 }
 
@@ -122,6 +130,9 @@ DigiPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          for (int i = 0; i < digi->size(); ++i) {
             HcalQIESample sample(digi->sample(i));
             hcal_digi_[i]->Fill(sample.adc(), weight);
+
+            int bin = (abs(digi->id().ieta()) - 1) / 4;
+            hcal_digi_ieta_[i][bin]->Fill(sample.adc(), weight);
          }
       }
    }
