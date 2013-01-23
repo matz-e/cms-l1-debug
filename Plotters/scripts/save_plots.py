@@ -207,6 +207,7 @@ def legend(path, hist):
         hist.SetMarkerStyle(r.kFullDotMedium)
     elif 'reweighted' in dir.lower():
         label = 'MC rw.'
+        color = 3
     else:
         label = 'MC'
         color = 2
