@@ -332,7 +332,7 @@ elif data and pu == 'low':
 elif mc and pu == 'low':
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
-                'file:SingleNuPt10_cfi_GEN_SIM_PU_RAW.root'
+                'file:SingleNuPt10_Mix.root'
                 ]))
 elif mc and pu == '45':
     process.source = cms.Source('PoolSource',
