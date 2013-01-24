@@ -208,14 +208,6 @@ else:
 process.l1GtTrigReport.PrintVerbosity = 1
 process.report = cms.Path(process.l1GtTrigReport)
 
-import HLTrigger.HLTfilters.triggerResultsFilter_cfi as hlt
-process.ZeroBiasAve = hlt.triggerResultsFilter.clone()
-process.ZeroBiasAve.triggerConditions = cms.vstring('HLT_ZeroBias*',)
-process.ZeroBiasAve.hltResults = cms.InputTag( "TriggerResults", "", "HLT" )
-process.ZeroBiasAve.l1tResults = cms.InputTag("")
-process.ZeroBiasAve.throw = cms.bool( False )
-process.zerobias = cms.Path(process.ZeroBiasAve)
-
 if reemul:
     process.load('HLTrigger.Configuration.HLT_FULL_cff')
     process.load('Configuration.StandardSequences.SimL1Emulator_cff')
@@ -255,8 +247,6 @@ process.pdump = cms.Path(process.dump)
 
 process.schedule = cms.Schedule()
 
-if data:
-    process.schedule.append(process.zerobias)
 if raw or do_reco:
     process.schedule.append(process.raw2digi)
     process.schedule.append(process.l1extra)
