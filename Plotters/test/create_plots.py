@@ -19,6 +19,7 @@ pu = '45'
 data = False
 debug = False
 
+do_digi = False
 do_reco = False
 
 aod = False
@@ -89,6 +90,18 @@ if mc:
 else:
     process.load('Configuration.StandardSequences.Reconstruction_Data_cff')
 
+if do_digi:
+    process.load('Configuration.StandardSequences.Digi_cff')
+    process.load('Configuration.StandardSequences.SimL1Emulator_cff')
+    process.load('HLTrigger.Configuration.HLT_GRun_cff')
+    process.load('Configuration.StandardSequences.DigiToRaw_cff')
+    process.load('Configuration.StandardSequences.L1Reco_cff')
+    process.load('SimGeneral.MixingModule.mixNoPU_cfi')
+
+    process.digi = cms.Path(process.pdigi)
+    process.l1sim = cms.Path(process.SimL1Emulator)
+    process.d2raw = cms.Path(process.DigiToRaw)
+    process.l1reco = cms.Path(process.L1Reco)
 if do_reco:
     process.GlobalTag.toGet = cms.VPSet(
             cms.PSet(record = cms.string('EcalSampleMaskRcd'),
@@ -254,11 +267,13 @@ process.pdump = cms.Path(process.dump)
 
 process.schedule = cms.Schedule()
 
-if data:
-    process.schedule.append(process.zerobias)
+if do_digi:
+    process.schedule.extend([process.digi, process.l1sim, process.d2raw])
 if raw or do_reco:
     process.schedule.append(process.raw2digi)
     process.schedule.append(process.l1extra)
+if do_digi:
+    process.schedule.append(process.l1reco)
 if reemul:
     process.schedule.append(process.unpacker)
     process.schedule.append(process.l1unpack)
