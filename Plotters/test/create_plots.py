@@ -76,7 +76,7 @@ process.GlobalTag.pfnPrefix = cms.untracked.string('frontier://FrontierProd/')
 if data:
     process.GlobalTag.globaltag = cms.string('GR_P_V40::All')
 else:
-    process.GlobalTag.globaltag = cms.string('START53_V7B::All')
+    process.GlobalTag.globaltag = cms.string('START53_V10::All')
 
 process.load('Configuration.StandardSequences.GeometryExtended_cff')
 # process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
@@ -229,7 +229,8 @@ if reemul:
     process = HLTrigger.Configuration.customizeHLTforL1Emulator.switchToL1Emulator(
             process, False, 'minPt', 'minPt', False, True, False, True)
     process = HLTrigger.Configuration.customizeHLTforL1Emulator.switchToSimGtReEmulGctDigis(process)
-    process.HcalTPGCoderULUT.LUTGenerationMode = cms.bool(True)
+    if mc:
+        process.HcalTPGCoderULUT.LUTGenerationMode = cms.bool(True)
 
     # process.es_pool2 = cms.ESSource("PoolDBESSource",
             # process.CondDBSetup,
