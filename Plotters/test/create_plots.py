@@ -27,6 +27,7 @@ reco = False
 reemul = False
 sim = False
 
+ifile = 'please set me'
 ofile = 'please set me'
 wfile = 'please set me'
 
@@ -49,6 +50,8 @@ for arg in argv:
     else:
         globals()[k] = type(globals()[k])(v)
 
+if ifile == 'please set me':
+    ifile = None
 if ofile == 'please set me':
     ofile = 'standalone_plots_{d}_{p}.root'.format(d='data' if data else 'mc', p=pu)
 
@@ -273,7 +276,10 @@ process.TFileService = cms.Service("TFileService",
         closeFileFast = cms.untracked.bool(True),
         fileName = cms.string(ofile))
 
-if data and pu == '45':
+if ifile:
+    process.source = cms.Source('PoolSource',
+            fileNames = cms.untracked.vstring([ifile]))
+elif data and pu == '45':
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
                 '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/1EADEC56-1BCA-E111-9692-BCAEC518FF68.root',
