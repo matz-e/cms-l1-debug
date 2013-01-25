@@ -387,17 +387,19 @@ def summarize(pdffile, files):
                 norm_by_event = '_' not in subkey
                 real_key = '_'.join([key, subkey, axis])
 
-                if 'digi' in real_key or 'tp' in real_key \
-                        or 'ecal' in real_key or 'hcal' in real_key:
-                    quant = 'digi'
-                elif 'calo' in real_key:
-                    quant = 'region'
-                elif 'track' in real_key:
-                    quant = 'track'
-                elif 'jet' in real_key:
-                    quant = 'jet'
+                qdir = objs[0][3].lower()
+                if 'calo' in qdir:
+                    quant = 'Region'
+                elif 'digi' in qdir or 'trigprim' in qdir:
+                    quant = 'Digi'
+                elif 'jet' in qdir:
+                    quant = 'Jet'
+                elif 'rechit' in qdir:
+                    quant = 'RecHit'
+                elif 'track' in qdir:
+                    quant = 'Track'
                 else:
-                    sys.stderr.write('Please add a quantity assignment for "{k}"\n.'.format(k=real_key))
+                    sys.stderr.write('Please add a quantity assignment for "{k}"\n.'.format(k=qdir))
                     raise
 
                 if not norm_by_event:
