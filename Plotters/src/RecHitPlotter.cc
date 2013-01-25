@@ -53,14 +53,8 @@
 template<typename THit, typename TDetId>
 std::pair<double, double> process_calo(
       const edm::Event&, const edm::InputTag&,
-      TH2D*, TH2D*,
-      TH1D*, TH1D*, TH1D*, TH1D*, TH1D*, TH1D*,
-      bool barrel=true, bool endcap=true);
-template<typename THit>
-std::pair<double, double> process_calo<THit, EEDetId>(
-      const edm::Event&, const edm::InputTag&,
-      TH2D*, TH2D*,
-      TH1D*, TH1D*, TH1D*, TH1D*, TH1D*, TH1D*,
+      double, TH2D*, TH2D*,
+      TH1D*, TH1D*, TH1D*, TH1D*, TH1D*, TH1D*, TH1D*,
       bool barrel=true, bool endcap=true);
 
 class RecHitPlotter : public edm::EDAnalyzer, BasePlotter {
@@ -147,7 +141,7 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
    ecal_hits_b_ = fs->make<TH1D>("ecal_rechits_b",
          "Hits in the ECAL barrel;n_{hits};Num",
          400, 0, 2000);
-   ecal_hits_e_ = fs->make<TH1D>("ecal_rechits_b",
+   ecal_hits_e_ = fs->make<TH1D>("ecal_rechits_e",
          "Hits in the ECAL endcap;n_{hits};Num",
          400, 0, 2000);
 
@@ -173,7 +167,7 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
    hcal_hits_b_ = fs->make<TH1D>("hcal_rechits_b",
          "Hits in the HCAL barrel;n_{hits};Num",
          400, 0, 2000);
-   hcal_hits_e_ = fs->make<TH1D>("hcal_rechits_b",
+   hcal_hits_e_ = fs->make<TH1D>("hcal_rechits_e",
          "Hits in the HCAL endcap;n_{hits};Num",
          400, 0, 2000);
 }
@@ -185,13 +179,14 @@ template<typename THit, typename TDetId>
 process_calo(
       const edm::Event& event,
       const edm::InputTag& tag,
-      TH2D *en, TH2D *mp,
+      double weight,
+      TH2D *en_dist, TH2D *mp_dist,
+      TH1D *en,
       TH1D *en_b, TH1D *en_e,
       TH1D *en_tot_b, TH1D *en_tot_e,
       TH1D *hits_b, TH1D *hits_e,
       bool barrel, bool endcap)
 {
-   double weight = this->weight(event);
    double e_tot = -1.;
    double e_tot_b = -1.;
    double e_tot_e = -1.;
@@ -211,8 +206,9 @@ process_calo(
       for (hit = hits->begin(); hit != hits->end(); ++hit) {
          TDetId id = static_cast<TDetId>(hit->id());
          e_tot += hit->energy();
-         en->Fill(id.ieta(), id.iphi(), hit->energy() * weight);
-         mp->Fill(id.ieta(), id.iphi(), weight);
+         en->Fill(hit->energy(), weight);
+         en_dist->Fill(id.ieta(), id.iphi(), hit->energy() * weight);
+         mp_dist->Fill(id.ieta(), id.iphi(), weight);
 
          if (id.subdet() == 1) {
             ++nhits_b;
@@ -230,26 +226,31 @@ process_calo(
       }
    }
 
-   if (barrel)
+   if (barrel) {
+      en_tot_b->Fill(e_tot_b, weight);
       hits_b->Fill(nhits_b, weight);
-   if (endcap)
+   }
+   if (endcap) {
+      en_tot_e->Fill(e_tot_e, weight);
       hits_e->Fill(nhits_e, weight);
+   }
 
    return std::make_pair(e_tot, nhits);
 }
 
-template<typename THit>
+template<>
    std::pair<double, double>
-process_calo<THit, EEDetId>(
+process_calo<EcalRecHit, EEDetId>(
       const edm::Event& event,
       const edm::InputTag& tag,
-      TH2D *en, TH2D *mp,
+      double weight,
+      TH2D *en_dist, TH2D *mp_dist,
+      TH1D *en,
       TH1D *en_b, TH1D *en_e,
       TH1D *en_tot_b, TH1D *en_tot_e,
       TH1D *hits_b, TH1D *hits_e,
       bool barrel, bool endcap)
 {
-   double weight = this->weight(event);
    double e_tot = -1.;
    double e_tot_b = -1.;
    double e_tot_e = -1.;
@@ -257,7 +258,7 @@ process_calo<THit, EEDetId>(
    int nhits_b = 0;
    int nhits_e = 0;
 
-   edm::Handle< edm::SortedCollection<THit> > hits;
+   edm::Handle< edm::SortedCollection<EcalRecHit> > hits;
    if (!event.getByLabel(tag, hits)) {
       edm::LogError("RecHitPlotter") <<
          "Can't find rec hit collection with tag '" << tag << "'" << std::endl;
@@ -265,10 +266,11 @@ process_calo<THit, EEDetId>(
       nhits = hits->size();
       e_tot = 0.;
 
-      typename edm::SortedCollection<THit>::const_iterator hit;
+      typename edm::SortedCollection<EcalRecHit>::const_iterator hit;
       for (hit = hits->begin(); hit != hits->end(); ++hit) {
-         TDetId id = static_cast<EEDetId>(hit->id());
+         EEDetId id = static_cast<EEDetId>(hit->id());
          e_tot += hit->energy();
+         en->Fill(hit->energy(), weight);
 
          if (id.subdet() == 1) {
             ++nhits_b;
@@ -286,10 +288,14 @@ process_calo<THit, EEDetId>(
       }
    }
 
-   if (barrel)
+   if (barrel) {
+      en_tot_b->Fill(e_tot_b, weight);
       hits_b->Fill(nhits_b, weight);
-   if (endcap)
+   }
+   if (endcap) {
+      en_tot_e->Fill(e_tot_e, weight);
       hits_e->Fill(nhits_e, weight);
+   }
 
    return std::make_pair(e_tot, nhits);
 }
@@ -299,27 +305,33 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 {
    double weight = this->weight(event);
 
-   std::pair<double, double> p_ecal = process_calo<EcalRecHit, EBDetId>(
+   std::pair<double, double> p_ecal_0 = process_calo<EcalRecHit, EBDetId>(
          event, ecalHits_[0],
+         weight,
          ecal_dist_en_, ecal_dist_mp_,
+         ecal_en_,
          ecal_en_b_, ecal_en_e_,
          ecal_en_tot_b_, ecal_en_tot_e_,
          ecal_hits_b_, ecal_hits_e_);
-   std::pair<double, double> p_ecal = process_calo<EcalRecHit, EEDetId>(
+   std::pair<double, double> p_ecal_1 = process_calo<EcalRecHit, EEDetId>(
          event, ecalHits_[1],
+         weight,
          ecal_dist_en_, ecal_dist_mp_,
+         ecal_en_,
          ecal_en_b_, ecal_en_e_,
          ecal_en_tot_b_, ecal_en_tot_e_,
          ecal_hits_b_, ecal_hits_e_);
    std::pair<double, double> p_hcal = process_calo<HBHERecHit, HcalDetId>(
          event, hcalHits_,
+         weight,
          hcal_dist_en_, hcal_dist_mp_,
+         hcal_en_,
          hcal_en_b_, hcal_en_e_,
          hcal_en_tot_b_, hcal_en_tot_e_,
          hcal_hits_b_, hcal_hits_e_);
 
-   ecal_en_tot_->Fill(p_ecal.first, weight);
-   ecal_hits_->Fill(p_ecal.second, weight);
+   ecal_en_tot_->Fill(p_ecal_0.first + p_ecal_1.first, weight);
+   ecal_hits_->Fill(p_ecal_0.second + p_ecal_1.second, weight);
    hcal_en_tot_->Fill(p_hcal.first, weight);
    hcal_hits_->Fill(p_hcal.second, weight);
 }
