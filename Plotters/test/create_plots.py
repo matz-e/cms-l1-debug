@@ -74,9 +74,9 @@ process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 process.GlobalTag.connect   = 'frontier://FrontierProd/CMS_COND_31X_GLOBALTAG'
 process.GlobalTag.pfnPrefix = cms.untracked.string('frontier://FrontierProd/')
 if data:
-    process.GlobalTag.globaltag = cms.string('GR_P_V40::All')
+    process.GlobalTag.globaltag = cms.string('GR_R_53_V18::All')
 else:
-    process.GlobalTag.globaltag = cms.string('START53_V10::All')
+    process.GlobalTag.globaltag = cms.string('START53_V15::All')
 
 process.load('Configuration.StandardSequences.GeometryExtended_cff')
 # process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
@@ -106,8 +106,59 @@ if data:
 else:
     process.load('Configuration.StandardSequences.RawToDigi_cff')
 
-process.raw2digi = cms.Path(process.RawToDigi)
-process.reco = cms.Path(process.reconstruction)
+process.p = cms.Path()
+
+if reco and pu == 'none': 
+    process.vfilter = cms.EDFilter("VertexCountFilter",
+            src = cms.InputTag("offlinePrimaryVertices"),
+            minNumber = cms.uint32(1),
+            maxNumber = cms.uint32(1),
+            filter = cms.bool(True))
+    process.p *= process.vfilter
+
+if raw or do_reco:
+    process.p *= process.RawToDigi
+
+if raw and reemul:
+    process.load('HLTrigger.Configuration.HLT_FULL_cff')
+    process.load('Configuration.StandardSequences.SimL1Emulator_cff')
+    process.load('EventFilter.L1GlobalTriggerRawToDigi.l1GtUnpack_cfi')
+
+    import L1Trigger.Configuration.L1Trigger_custom
+    process = L1Trigger.Configuration.L1Trigger_custom.customiseL1GtEmulatorFromRaw(process)
+    process = L1Trigger.Configuration.L1Trigger_custom.customiseResetPrescalesAndMasks(process)
+
+    import HLTrigger.Configuration.customizeHLTforL1Emulator
+    process = HLTrigger.Configuration.customizeHLTforL1Emulator.switchToL1Emulator(
+            process, False, 'minPt', 'minPt', False, True, False, True)
+    process = HLTrigger.Configuration.customizeHLTforL1Emulator.switchToSimGtReEmulGctDigis(process)
+    if mc:
+        process.HcalTPGCoderULUT.LUTGenerationMode = cms.bool(True)
+
+    # process.es_pool2 = cms.ESSource("PoolDBESSource",
+            # process.CondDBSetup,
+            # timetype = cms.string('runnumber'),
+            # toGet = cms.VPSet( cms.PSet( record = cms.string('HcalL1TriggerObjectsRcd'),
+                # tag = cms.string('L1TriggerObjects_testIdealHCALv2')),),
+            # connect = cms.string('frontier://FrontierPrep/CMS_COND_HCAL'),
+            # authenticationMethod = cms.untracked.uint32(0),)
+    # process.es_prefer_es_pool2 = cms.ESPrefer( "PoolDBESSource", "es_pool2")
+
+    process.load('L1Trigger.L1ExtraFromDigis.l1extraParticles_cff')
+    # process.l1extraParticles.forwardJetSource = cms.InputTag('gctReEmulDigis', 'forJets')
+    # process.l1extraParticles.centralJetSource = cms.InputTag('gctReEmulDigis', 'cenJets')
+    # process.l1extraParticles.tauJetSource = cms.InputTag('gctReEmulDigis', 'tauJets')
+
+    process.p *= process.HLT1UnpackerSequence \
+            * process.l1GtUnpack \
+            * process.l1extraParticles
+
+if debug:
+    process.dump = cms.EDAnalyzer("EventContentAnalyzer")
+    process.p *= process.dump
+
+if do_reco:
+    process.p *= process.reconstruction
 
 process.load('SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff')
 
@@ -152,17 +203,15 @@ if mc:
 # Plotter path assembly
 # =====================
 
-process.plotters = cms.Path()
-
 if raw:
-    process.plotters *= \
+    process.p *= \
             process.digiPlotter * \
             process.triggerPrimitiveDigiPlotter * \
             process.caloRegionPlotter * \
             process.gctPlotter * \
             process.jetPlotter
 if raw and reemul:
-    process.plotters *= \
+    process.p *= \
             process.caloRegionCmpPlotter * \
             process.reEmulTrigPrimPlotter * \
             process.reEmulCaloRegionPlotter * \
@@ -171,12 +220,12 @@ if raw and reemul:
             process.triggerPrimitiveDigiCmpPlotter
 
 if reco or do_reco:
-    process.plotters *= process.trackPlotter * process.recHitPlotter
+    process.p *= process.trackPlotter * process.recHitPlotter
 if (raw and reco) or do_reco:
-    process.plotters *= process.recHitTPPlotter
+    process.p *= process.recHitTPPlotter
 
 if mc:
-    process.plotters *= process.pileUpPlotter
+    process.p *= process.pileUpPlotter
 
     import os.path
     if os.path.exists(wfile) and os.path.isfile(wfile):
@@ -195,73 +244,19 @@ if mc:
                 pass
 
         visitor = CreateWeighted()
-        process.plotters.visit(visitor)
+        process.p.visit(visitor)
         for m in visitor.weighted:
             process.__setattr__(m.label(), m)
-            process.plotters *= m
-
-process.load("L1Trigger.GlobalTriggerAnalyzer.l1GtTrigReport_cfi")
-if reemul:
-    process.l1GtTrigReport.L1GtRecordInputTag = "simGtDigis"
-else:
-    process.l1GtTrigReport.L1GtRecordInputTag = "gtDigis"
-process.l1GtTrigReport.PrintVerbosity = 1
-process.report = cms.Path(process.l1GtTrigReport)
-
-if reemul:
-    process.load('HLTrigger.Configuration.HLT_FULL_cff')
-    process.load('Configuration.StandardSequences.SimL1Emulator_cff')
-    process.load('EventFilter.L1GlobalTriggerRawToDigi.l1GtUnpack_cfi')
-
-    import L1Trigger.Configuration.L1Trigger_custom
-    process = L1Trigger.Configuration.L1Trigger_custom.customiseL1GtEmulatorFromRaw(process)
-    process = L1Trigger.Configuration.L1Trigger_custom.customiseResetPrescalesAndMasks(process)
-
-    import HLTrigger.Configuration.customizeHLTforL1Emulator
-    process = HLTrigger.Configuration.customizeHLTforL1Emulator.switchToL1Emulator(
-            process, False, 'minPt', 'minPt', False, True, False, True)
-    process = HLTrigger.Configuration.customizeHLTforL1Emulator.switchToSimGtReEmulGctDigis(process)
-    if mc:
-        process.HcalTPGCoderULUT.LUTGenerationMode = cms.bool(True)
-
-    # process.es_pool2 = cms.ESSource("PoolDBESSource",
-            # process.CondDBSetup,
-            # timetype = cms.string('runnumber'),
-            # toGet = cms.VPSet( cms.PSet( record = cms.string('HcalL1TriggerObjectsRcd'),
-                # tag = cms.string('L1TriggerObjects_testIdealHCALv2')),),
-            # connect = cms.string('frontier://FrontierPrep/CMS_COND_HCAL'),
-            # authenticationMethod = cms.untracked.uint32(0),)
-    # process.es_prefer_es_pool2 = cms.ESPrefer( "PoolDBESSource", "es_pool2")
-
-    process.unpacker = cms.Path(process.HLTL1UnpackerSequence)
-    process.l1unpack = cms.Path(process.l1GtUnpack)
-
-process.load('L1Trigger.L1ExtraFromDigis.l1extraParticles_cff')
-# process.l1extraParticles.forwardJetSource = cms.InputTag('gctReEmulDigis', 'forJets')
-# process.l1extraParticles.centralJetSource = cms.InputTag('gctReEmulDigis', 'cenJets')
-# process.l1extraParticles.tauJetSource = cms.InputTag('gctReEmulDigis', 'tauJets')
-process.l1extra = cms.Path(process.l1extraParticles)
-
-process.dump = cms.EDAnalyzer("EventContentAnalyzer")
-process.pdump = cms.Path(process.dump)
-
-process.schedule = cms.Schedule()
-
-if raw or do_reco:
-    process.schedule.append(process.raw2digi)
-    process.schedule.append(process.l1extra)
-if reemul:
-    process.schedule.append(process.unpacker)
-    process.schedule.append(process.l1unpack)
-if debug:
-    process.schedule.append(process.pdump)
-if do_reco:
-    process.schedule.append(process.reco)
-
-process.schedule.append(process.plotters)
+            process.p *= m
 
 if raw:
-    process.schedule.append(process.report)
+    process.load("L1Trigger.GlobalTriggerAnalyzer.l1GtTrigReport_cfi")
+    if reemul:
+        process.l1GtTrigReport.L1GtRecordInputTag = "simGtDigis"
+    else:
+        process.l1GtTrigReport.L1GtRecordInputTag = "gtDigis"
+    process.l1GtTrigReport.PrintVerbosity = 1
+    process.p *= process.l1GtTrigReport
 
 process.TFileService = cms.Service("TFileService",
         closeFileFast = cms.untracked.bool(True),
@@ -270,6 +265,64 @@ process.TFileService = cms.Service("TFileService",
 if ifile:
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([ifile]))
+elif data and pu == 'none':
+    process.source = cms.Source('PoolSource',
+            fileNames = cms.untracked.vstring([
+                '/store/data/Run2012A/LP_MinBias2/RECO/PromptReco-v1/000/193/092/00A2F6F1-8895-E111-9ADD-0025901D5DB8.root',
+                '/store/data/Run2012A/LP_MinBias2/RECO/PromptReco-v1/000/193/092/02762A56-9395-E111-AD5C-BCAEC532971D.root',
+                '/store/data/Run2012A/LP_MinBias2/RECO/PromptReco-v1/000/193/092/02DA5B36-8C95-E111-A7CF-003048F117EA.root',
+                '/store/data/Run2012A/LP_MinBias2/RECO/PromptReco-v1/000/193/092/049C146D-8D95-E111-ACC1-E0CB4E553673.root',
+                '/store/data/Run2012A/LP_MinBias2/RECO/PromptReco-v1/000/193/092/00E7D27D-9095-E111-B172-0025B324400C.root',
+                '/store/data/Run2012A/LP_MinBias2/RECO/PromptReco-v1/000/193/092/FADC4784-8E95-E111-A845-002481E0D90C.root',
+                '/store/data/Run2012A/LP_MinBias2/RECO/PromptReco-v1/000/193/092/FC0F5100-8E95-E111-8760-001D09F2305C.root',
+                '/store/data/Run2012A/LP_MinBias2/RECO/PromptReco-v1/000/193/092/F4862BD6-8C95-E111-8EBE-5404A640A63D.root',
+                '/store/data/Run2012A/LP_MinBias2/RECO/PromptReco-v1/000/193/092/FA1AF863-8995-E111-8EE8-BCAEC5329702.root',
+                '/store/data/Run2012A/LP_MinBias2/RECO/PromptReco-v1/000/193/092/FCD076A1-9295-E111-8EC7-001D09F295FB.root',
+                '/store/data/Run2012A/LP_MinBias1/RECO/PromptReco-v1/000/193/092/BE6E717E-8D95-E111-A969-BCAEC518FF76.root',
+                '/store/data/Run2012A/LP_MinBias1/RECO/PromptReco-v1/000/193/092/C2BB0FF9-9195-E111-92F3-485B3977172C.root',
+                '/store/data/Run2012A/LP_MinBias1/RECO/PromptReco-v1/000/193/092/C216AE13-8895-E111-80B5-5404A640A642.root',
+                '/store/data/Run2012A/LP_MinBias1/RECO/PromptReco-v1/000/193/092/CAE5DBD7-8C95-E111-8F2A-5404A63886C1.root',
+                '/store/data/Run2012A/LP_MinBias1/RECO/PromptReco-v1/000/193/092/C2684086-9095-E111-9035-003048D2C174.root',
+                '/store/data/Run2012A/LP_MinBias1/RECO/PromptReco-v1/000/193/092/C6BE23A6-9295-E111-91CD-003048F024DA.root',
+                '/store/data/Run2012A/LP_MinBias1/RECO/PromptReco-v1/000/193/092/CE6A0D88-9095-E111-BAFA-001D09F2424A.root',
+                '/store/data/Run2012A/LP_MinBias1/RECO/PromptReco-v1/000/193/092/D036380A-8995-E111-A0F4-003048F1183E.root',
+                '/store/data/Run2012A/LP_MinBias1/RECO/PromptReco-v1/000/193/092/D2DF5184-9095-E111-A262-001D09F2B30B.root',
+                '/store/data/Run2012A/LP_MinBias1/RECO/PromptReco-v1/000/193/092/D40DAE09-8E95-E111-AFBE-BCAEC53296F7.root',
+                ]))
+elif mc and pu == 'none':
+    process.source = cms.Source('PoolSource',
+            fileNames = cms.untracked.vstring([
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/00FF600E-3E60-E211-83F7-0026189438AB.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/02B95F0B-4060-E211-8AB1-002618943908.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/06CC981F-4060-E211-8319-002618943972.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/082232C1-3E60-E211-9A18-00304867916E.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/08A876BE-3F60-E211-9040-002354EF3BDA.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/0AB349A1-4060-E211-B309-003048678B8E.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/0C854507-4260-E211-9319-003048679168.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/125FE0BA-4A60-E211-85CD-0025905964B2.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/1C38930A-3D60-E211-89FF-002618943916.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/22D59366-3D60-E211-97F4-00261894383F.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/24126F6E-3E60-E211-ACCD-0026189437E8.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/24E3A14F-4060-E211-B19C-00261894388F.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/265D8E50-4060-E211-BA99-0026189438FA.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/34D50998-4260-E211-9065-002590596486.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/36B3930A-3E60-E211-9A11-0026189438EB.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/3C6024B7-3E60-E211-BBB7-00261894383F.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/3CB21D11-3F60-E211-8D10-002618943829.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/3E6DDA03-4660-E211-99C5-0025905964C2.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/3EE12D78-4160-E211-AC9E-003048678B14.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/460FDC14-3E60-E211-8EDC-002618943967.root',
+                ]))
+elif data and pu == 'low':
+    process.source = cms.Source('PoolSource',
+            fileNames = cms.untracked.vstring([
+                'file:skim_0bias.root'
+                ]))
+elif mc and pu == 'low':
+    process.source = cms.Source('PoolSource',
+            fileNames = cms.untracked.vstring([
+                'file:SingleNuPt10_Mix.root'
+                ]))
 elif data and pu == '45':
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
@@ -324,16 +377,6 @@ elif data and pu == '66':
             # lumisToProcess = cms.untracked.VLuminosityBlockRange(
                 # '179828:179-179828:189', '179828:366-179828:366'
                 # ))
-elif data and pu == 'low':
-    process.source = cms.Source('PoolSource',
-            fileNames = cms.untracked.vstring([
-                'file:skim_0bias.root'
-                ]))
-elif mc and pu == 'low':
-    process.source = cms.Source('PoolSource',
-            fileNames = cms.untracked.vstring([
-                'file:SingleNuPt10_Mix.root'
-                ]))
 elif mc and pu == '45':
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
