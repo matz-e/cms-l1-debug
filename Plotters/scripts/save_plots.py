@@ -61,17 +61,33 @@ def get_limits(hist):
     x_max = hist.GetXaxis().GetXmax()
 
     i = hist.GetNbinsX()
+    sec = False
     while i > 0:
         if hist.GetBinContent(i) > 0:
-            break
+            if sec:
+                break
+            else:
+                sec = True
+                i -= 1
+                continue
+        else:
+            sec = False
         x_max = hist.GetBinLowEdge(i)
         i -= 1
 
     i = 1
+    sec = False
     x_min = 0
     while x_min < x_max:
         if hist.GetBinContent(i) > 0:
-            break
+            if sec:
+                break
+            else:
+                sec = True
+                i += 1
+                continue
+        else:
+            sec = False
         x_min = hist.GetBinLowEdge(i)
         i += 1
 
