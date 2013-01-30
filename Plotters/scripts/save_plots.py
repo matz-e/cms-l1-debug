@@ -129,6 +129,11 @@ def create_stack(hists, files, norms=None, adjustlimits=True, limits=None, logpl
 
         h_rel = h.Clone()
         h_rel.Divide(norm_hist)
+        yax = h_rel.GetYaxis()
+        # try to set axis range nicer with some magic numbers
+        yax.SetRangeUser(
+                max(.7, yax.GetXmin()),
+                max(3., yax.GetXmax() * 8))
 
         stack_rel.Add(h_rel)
         stack_rel.SetTitle(title)
@@ -191,6 +196,8 @@ def plot_stacks(stacks, filename, width=None):
         s[1].GetXaxis().SetTitleOffset(1.2)
         s[1].GetXaxis().SetTitleSize(2 * s[0].GetXaxis().GetTitleSize())
         s[1].GetXaxis().SetTitle(s[0].GetXaxis().GetTitle())
+
+        r.gPad.Update()
         r.gPad.SetTopMargin(1e-5)
         r.gPad.SetBottomMargin(.3)
         r.gPad.SetTickx(1)
