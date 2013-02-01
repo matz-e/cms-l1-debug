@@ -163,6 +163,7 @@ if do_reco:
 process.load('SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff')
 
 process.load('Debug.Plotters.CaloRegionPlotter_cfi')
+process.load('Debug.Plotters.CaloTowerPlotter_cfi')
 process.load('Debug.Plotters.CaloRegionCmpPlotter_cfi')
 process.load('Debug.Plotters.DigiPlotter_cfi')
 process.load('Debug.Plotters.L1GctPlotter_cfi')
@@ -230,6 +231,7 @@ if raw and reemul:
 
 if reco or do_reco:
     process.p *= \
+            process.caloTowerPlotter * \
             process.trackPlotter * \
             process.recHitPlotter * \
             process.recHitPlotter02 * \
