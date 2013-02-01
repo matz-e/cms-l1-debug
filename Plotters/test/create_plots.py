@@ -180,6 +180,15 @@ if sim:
 
 process.jetPlotter.l1Jets = cms.untracked.string('l1extraParticles')
 
+process.recHitPlotter02 = process.recHitPlotter.clone()
+process.recHitPlotter02.cut = cms.untracked.double(2.0)
+
+process.recHitPlotter05 = process.recHitPlotter.clone()
+process.recHitPlotter05.cut = cms.untracked.double(5.0)
+
+process.recHitPlotter10 = process.recHitPlotter.clone()
+process.recHitPlotter10.cut = cms.untracked.double(10.0)
+
 process.reEmulTrigPrimPlotter = process.triggerPrimitiveDigiPlotter.clone()
 process.reEmulTrigPrimPlotter.ecalDigis = cms.InputTag('ecalDigis', 'EcalTriggerPrimitives')
 process.reEmulTrigPrimPlotter.hcalDigis = cms.InputTag('hcalReEmulDigis', '')
@@ -220,7 +229,12 @@ if raw and reemul:
             process.triggerPrimitiveDigiCmpPlotter
 
 if reco or do_reco:
-    process.p *= process.trackPlotter * process.recHitPlotter
+    process.p *= \
+            process.trackPlotter * \
+            process.recHitPlotter * \
+            process.recHitPlotter02 * \
+            process.recHitPlotter05 * \
+            process.recHitPlotter10
 if (raw and reco) or do_reco:
     process.p *= process.recHitTPPlotter
 

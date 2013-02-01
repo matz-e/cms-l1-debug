@@ -4,10 +4,14 @@ recHitPlotter = cms.EDAnalyzer('RecHitPlotter',
         ecalHits = cms.VInputTag(
             cms.InputTag('ecalRecHit', 'EcalRecHitsEB'),
             cms.InputTag('ecalRecHit', 'EcalRecHitsEE')),
-        hcalHits = cms.InputTag('hbhereco', ''))
+        hcalHits = cms.VInputTag(
+            cms.InputTag('hbhereco', ''),
+            cms.InputTag('hfreco', '')))
 
 reducedRecHitPlotter = cms.EDAnalyzer('RecHitPlotter',
         ecalHits = cms.VInputTag(
             cms.InputTag('reducedEcalRecHitsEB', ''),
             cms.InputTag('reducedEcalRecHitsEE', '')),
-        hcalHits = cms.InputTag('reducedHcalRecHits', 'hbhereco'))
+        hcalHits = cms.VInputTag(
+            cms.InputTag('reducedHcalRecHits', 'hbhereco'),
+            cms.InputTag('reducedHcalRecHits', 'hfreco')))
