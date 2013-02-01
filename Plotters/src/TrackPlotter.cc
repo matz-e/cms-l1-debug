@@ -34,6 +34,7 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
+#include "DataFormats/TrackReco/interface/HitPattern.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 
@@ -61,8 +62,15 @@ class TrackPlotter : public edm::EDAnalyzer, BasePlotter {
       TH2D* track_en_;
       TH2D* track_mp_;
 
+      TH1D* chi2_;
+      TH1D* dxy_;
+      TH1D* dz_;
+      TH1D* hits_pixel_;
+      TH1D* hits_strip_;
+      TH1D* pt_;
       TH1D* pt_tot_;
       TH1D* tracks_;
+      TH1D* vertex_z_;
       TH1D* vertices_;
 
       edm::InputTag vertexSrc_;
@@ -79,9 +87,24 @@ TrackPlotter::TrackPlotter(const edm::ParameterSet& config) :
    track_mp_ = fs->make<TH2D>("track_mp", "Multiplicity of tracks",
          40, -3.2, 3.2, 40, -3.2, 3.2);
 
+   chi2_ = fs->make<TH1D>("chi2", "#chi^{2} / ndof;#chi^{2} / ndof;Tracks",
+         100, 0., 5.);
+   dxy_ = fs->make<TH1D>("dxy", "d_{xy} / #sigma(d_{xy});d_{xy} / #sigma(d_{xy});Tracks",
+         250, 0., 25.);
+   dz_ = fs->make<TH1D>("dz", "d_{z} / #sigma(d_{z});d_{z} / #sigma(d_{z});Tracks",
+         250, 0., 25.);
+   hits_pixel_ = fs->make<TH1D>("hits_pixel", "Hits in the pixel tracker;Pixel hits;Tracks",
+         11, -.5, 10.5);
+   hits_strip_ = fs->make<TH1D>("hits_strip", "HIts in the strip tracker;Strip hits;Tracks",
+         41, -.5, 40.5);
+   pt_ = fs->make<TH1D>("pt", "p_{T} per track;p_{T} [GeV];Num",
+         750, 0., 1500.);
    pt_tot_ = fs->make<TH1D>("pt_tot", "#sum p_{T} per event;#sum p_{T} [GeV];Num",
-         150, 0., 1500.);
-   tracks_ = fs->make<TH1D>("tracks", "# of tracks;n_{tracks};Num", 300, 0, 300);
+         750, 0., 1500.);
+   vertex_z_ = fs->make<TH1D>("vertex_z", "#delta z;#delta z;Num",
+         80, -2.5, 2.5);
+
+   tracks_ = fs->make<TH1D>("tracks", "# of tracks;n_{tracks};Num", 299, 1, 299);
    vertices_ = fs->make<TH1D>("vertices", "# of vertices;n_{vertices};Num", 100, 0, 100);
 }
 
@@ -109,6 +132,18 @@ TrackPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    reco::Vertex::trackRef_iterator its;
    for (its = vert->tracks_begin(); its != vert->tracks_end(); ++its) {
       pt_tot += (*its)->pt();
+
+      chi2_->Fill((*its)->normalizedChi2(), weight);
+
+      dxy_->Fill((*its)->dxy() / (*its)->dxyError(), weight);
+      dz_->Fill((*its)->dz() / (*its)->dzError(), weight);
+
+      reco::HitPattern hits = (*its)->hitPattern();
+      hits_pixel_->Fill(hits.numberOfValidPixelHits(), weight);
+      hits_strip_->Fill(hits.numberOfValidStripHits(), weight);
+
+      pt_->Fill((*its)->pt(), weight);
+      vertex_z_->Fill((*its)->dz(), weight);
 
       // Cut out small p_t
       if ((*its)->pt() < .5)
