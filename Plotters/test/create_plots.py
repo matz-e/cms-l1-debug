@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# vim: foldmethod=marker foldlevel=0
 import sys
 
 """
@@ -282,6 +283,7 @@ if ifile:
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([ifile]))
 elif data and pu == 'none':
+    # {{{
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
                 '/store/data/Run2012A/LP_MinBias2/RECO/PromptReco-v1/000/193/092/00A2F6F1-8895-E111-9ADD-0025901D5DB8.root',
@@ -305,7 +307,9 @@ elif data and pu == 'none':
                 '/store/data/Run2012A/LP_MinBias1/RECO/PromptReco-v1/000/193/092/D2DF5184-9095-E111-A262-001D09F2B30B.root',
                 '/store/data/Run2012A/LP_MinBias1/RECO/PromptReco-v1/000/193/092/D40DAE09-8E95-E111-AFBE-BCAEC53296F7.root',
                 ]))
+    # }}}
 elif mc and pu == 'none':
+    # {{{
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
                 '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/00FF600E-3E60-E211-83F7-0026189438AB.root',
@@ -329,6 +333,7 @@ elif mc and pu == 'none':
                 '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/3EE12D78-4160-E211-AC9E-003048678B14.root',
                 '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/460FDC14-3E60-E211-8EDC-002618943967.root',
                 ]))
+    # }}}
 elif data and pu == 'low':
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
@@ -340,6 +345,7 @@ elif mc and pu == 'low':
                 'file:SingleNuPt10_Mix.root'
                 ]))
 elif data and pu == '45':
+    # {{{
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
                 '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/588/1EADEC56-1BCA-E111-9692-BCAEC518FF68.root',
@@ -366,7 +372,9 @@ elif data and pu == '45':
             # lumisToProcess = cms.untracked.VLuminosityBlockRange(
                 # '179828:179-179828:189', '179828:366-179828:366'
                 # ))
+    # }}}
 elif data and pu == '66':
+    # {{{
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
                 '/store/data/Run2012C/ZeroBias1/RAW/v1/000/198/609/3C4A28B8-72CA-E111-827A-003048F118AA.root',
@@ -393,7 +401,9 @@ elif data and pu == '66':
             # lumisToProcess = cms.untracked.VLuminosityBlockRange(
                 # '179828:179-179828:189', '179828:366-179828:366'
                 # ))
+    # }}}
 elif mc and pu == '45':
+    # {{{
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
                 '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/04853736-9828-E211-A015-003048FFD756.root',
@@ -417,7 +427,9 @@ elif mc and pu == '45':
                 '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/00A47645-9828-E211-9203-003048678C06.root',
                 '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/0046FAB4-9E28-E211-8A5C-003048678F74.root'
                 ]))
+    # }}}
 elif mc and pu == '66':
+    # {{{
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
                 '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/049AECD1-9C27-E211-9AC5-001A92971B82.root',
@@ -441,6 +453,7 @@ elif mc and pu == '66':
                 '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/0037F92C-9C27-E211-BF0E-002618943930.root',
                 '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/00124F6F-9C27-E211-A055-003048FFD732.root'
                 ]))
+    # }}}
 
 if debug:
     print process.dumpPython()
