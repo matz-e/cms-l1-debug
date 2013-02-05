@@ -43,7 +43,7 @@ else:
     argv = sys.argv[1:]
 
 for arg in argv:
-    (k, v) = map(str.strip, arg.split('='))
+    (k, v) = map(str.strip, arg.split('=', 1))
     if k not in globals():
         raise "Unknown argument '%s'!" % (k,)
     if type(globals()[k]) == bool:
