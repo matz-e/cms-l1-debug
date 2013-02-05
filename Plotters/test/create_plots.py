@@ -107,7 +107,8 @@ if data:
 else:
     process.load('Configuration.StandardSequences.RawToDigi_cff')
 
-process.p = cms.Path()
+process.p = cms.Path() # for plots
+process.q = cms.Path() # for reemulation
 
 if reco and pu == 'none': 
     process.vfilter = cms.EDFilter("VertexCountFilter",
@@ -118,7 +119,7 @@ if reco and pu == 'none':
     process.p *= process.vfilter
 
 if raw or do_reco:
-    process.p *= process.RawToDigi
+    process.q *= process.RawToDigi
 
 if raw and reemul:
     process.load('HLTrigger.Configuration.HLT_FULL_cff')
@@ -150,16 +151,16 @@ if raw and reemul:
     # process.l1extraParticles.centralJetSource = cms.InputTag('gctReEmulDigis', 'cenJets')
     # process.l1extraParticles.tauJetSource = cms.InputTag('gctReEmulDigis', 'tauJets')
 
-    process.p *= process.HLT1UnpackerSequence \
-            * process.l1GtUnpack \
-            * process.l1extraParticles
+    process.q *= process.l1extraParticles \
+            * process.HLTL1UnpackerSequence \
+            * process.l1GtUnpack 
 
 if debug:
     process.dump = cms.EDAnalyzer("EventContentAnalyzer")
     process.p *= process.dump
 
 if do_reco:
-    process.p *= process.reconstruction
+    process.q *= process.reconstruction
 
 process.load('SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff')
 
@@ -274,6 +275,8 @@ if raw:
         process.l1GtTrigReport.L1GtRecordInputTag = "gtDigis"
     process.l1GtTrigReport.PrintVerbosity = 1
     process.p *= process.l1GtTrigReport
+
+process.schedule = cms.Schedule(process.q, process.p)
 
 process.TFileService = cms.Service("TFileService",
         closeFileFast = cms.untracked.bool(True),
