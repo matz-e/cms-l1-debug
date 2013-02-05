@@ -22,11 +22,16 @@ debug = False
 
 do_reco = False
 
+alt = False # alternative dataset
 aod = False
 raw = True
 reco = False
 reemul = False
 sim = False
+
+# filters
+onepv = False
+minbias = False
 
 ifile = 'please set me'
 ofile = 'please set me'
@@ -110,7 +115,19 @@ else:
 process.p = cms.Path() # for plots
 process.q = cms.Path() # for reemulation
 
-if reco and pu == 'none': 
+if minbias:
+    process.tfilter = cms.EDFilter( "TriggerResultsFilter",
+        # triggerConditions = cms.vstring( "L1Tech_BSC_minBias_threshold1" ),
+        triggerConditions = cms.vstring( "L1Tech_BSC_minBias_OR" ),
+        hltResults = cms.InputTag( "TriggerResults", "", "HLT" ),
+        l1tResults = cms.InputTag( "gtDigis" ),
+        l1tIgnoreMask = cms.bool( True ),
+        l1techIgnorePrescales = cms.bool( True ),
+        daqPartitions = cms.uint32( 1 ),
+        throw = cms.bool( True ))
+    process.p *= process.tfilter
+
+if reco and pu == 'none' and onepv: 
     process.vfilter = cms.EDFilter("VertexCountFilter",
             src = cms.InputTag("offlinePrimaryVertices"),
             minNumber = cms.uint32(1),
@@ -284,7 +301,7 @@ process.TFileService = cms.Service("TFileService",
 if ifile:
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([ifile]))
-elif data and pu == 'none':
+elif data and pu == 'none' and reco:
     # {{{
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
@@ -310,7 +327,63 @@ elif data and pu == 'none':
                 '/store/data/Run2012A/LP_MinBias1/RECO/PromptReco-v1/000/193/092/D40DAE09-8E95-E111-AFBE-BCAEC53296F7.root',
                 ]))
     # }}}
-elif mc and pu == 'none':
+elif data and pu == 'none' and raw:
+    # {{{
+    process.source = cms.Source('PoolSource',
+            fileNames = cms.untracked.vstring([
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/008C8CA6-D393-E111-88CC-BCAEC518FF8D.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/042553EC-DE93-E111-AFEF-485B3962633D.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/027F4095-F093-E111-B803-003048D37560.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/063BDDC1-D593-E111-A517-002481E0D7C0.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/06016C53-E593-E111-BF2D-5404A63886C6.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/0A643421-E393-E111-96C1-002481E94C7E.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/06B635CC-E893-E111-9A5C-001D09F24353.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/10F0AB04-D393-E111-9902-002481E0D958.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/0AE2F80B-ED93-E111-8EEA-003048D2BC30.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/16F0EB74-D693-E111-83DE-BCAEC5329709.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/12372E91-E493-E111-A96C-5404A63886B9.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/18B5C504-D393-E111-A114-00237DDC5C24.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/18292EEF-DE93-E111-89FE-001D09F2910A.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/20CE1A8F-F093-E111-98DC-002481E0D73C.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/1E979DD9-E393-E111-ACFF-5404A63886A2.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/2432439F-EB93-E111-8F6E-5404A63886BE.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/22499C71-E293-E111-BD3D-001D09F24D8A.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/2A2321E4-EF93-E111-B860-5404A63886A2.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/260E62C0-E193-E111-88DC-003048D3C944.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/2AB69BF4-E593-E111-A211-001D09F241B9.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/2A672ED6-E393-E111-A9AA-0025901D5DF4.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/2CB96675-D693-E111-A23D-001D09F253D4.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/2C7EAAC2-D593-E111-A5A3-001D09F248F8.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/34AD6696-F093-E111-8D0B-003048D2C0F0.root',
+                '/store/data/Run2012A/LP_MinBias1/RAW/v1/000/193/092/308E2BFA-E593-E111-8FD6-003048D373F6.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/AED0D9EC-DE93-E111-BDE2-001D09F28EA3.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/B29F8AA6-D393-E111-88CC-BCAEC518FF8D.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/90BB0EDE-D793-E111-8026-003048D3C932.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/B6B6FC22-E393-E111-9D96-001D09F2960F.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/B80DA266-E793-E111-8A7A-001D09F2A49C.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/BC29DDAE-DA93-E111-B50F-001D09F2527B.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/C0DCAE38-D793-E111-92B7-001D09F2983F.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/C266BEF7-E593-E111-B8B2-002481E94C7E.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/A039C238-D793-E111-8354-0019B9F581C9.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/C459215C-D493-E111-A42A-BCAEC532971F.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/C483C304-D393-E111-A114-00237DDC5C24.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/C4A84513-E193-E111-92D8-BCAEC53296F8.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/A4B0B76C-E793-E111-AA11-0025B320384C.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/C6B24ACD-E893-E111-9EEE-001D09F2305C.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/C83A1C97-F093-E111-884A-001D09F241B9.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/CA193BA3-DF93-E111-8FB2-001D09F29114.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/AC2018A1-DF93-E111-80F8-001D09F276CF.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/CC8F71D7-E393-E111-A95E-003048D2BBF0.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/B2C9FEED-DE93-E111-8E05-001D09F2462D.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/D282002B-EF93-E111-96AF-003048D2BCA2.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/D47265A0-EB93-E111-ABDC-001D09F253D4.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/D68128A1-DF93-E111-8BD6-002481E0D958.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/D68FBFCC-DC93-E111-953E-001D09F2AD84.root',
+                '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/D89CC874-D693-E111-810E-5404A63886B6.root',
+            '/store/data/Run2012A/LP_MinBias2/RAW/v1/000/193/092/DA63B4CB-E893-E111-9038-001D09F295A1.root',
+                ]))
+    # }}}
+elif mc and pu == 'none' and not alt and reco:
     # {{{
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
@@ -334,6 +407,140 @@ elif mc and pu == 'none':
                 '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/3E6DDA03-4660-E211-99C5-0025905964C2.root',
                 '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/3EE12D78-4160-E211-AC9E-003048678B14.root',
                 '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/RECODEBUG/EflowHpu_NoPileUp_START53_V7C-v1/10000/460FDC14-3E60-E211-8EDC-002618943967.root',
+                ]))
+    # }}}
+elif mc and pu == 'none' and not alt and raw:
+    # {{{
+    process.source = cms.Source('PoolSource',
+            fileNames = cms.untracked.vstring([
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/027A314A-925F-E211-8650-002354EF3BDA.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/02E342B2-915F-E211-B714-002354EF3BE0.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/005EA36A-915F-E211-A6CE-0026189438FC.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/00CFEC95-925F-E211-BC72-00261894397B.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/06F80846-925F-E211-8DB3-0026189438CB.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/00F11B64-915F-E211-9EDD-003048B95B30.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/0A3AA8F6-8D5F-E211-8E55-003048FFCB84.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/0A89A79E-925F-E211-85AD-003048FFD728.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/048605D8-905F-E211-9B34-0025905938A8.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/0C0FE6D4-905F-E211-9120-002354EF3BDB.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/0C47DF47-925F-E211-A959-002618943868.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/0CDEFED8-905F-E211-80EA-0026189438B5.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/0E566BCC-8E5F-E211-BB02-0026189438F6.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/06C32DB6-915F-E211-AF56-002618943854.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/08A9A695-925F-E211-88C8-00304867916E.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/0ACCCD3C-905F-E211-B5C0-002618943854.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/187B2C01-925F-E211-8204-002354EF3BE2.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/18880CB0-915F-E211-9928-0026189438C1.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/1A0CFCBA-935F-E211-B499-003048D3FC94.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/1AA5C866-915F-E211-8F54-003048678DA2.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/1AAB5C46-905F-E211-9562-00304867D446.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/0E823C44-925F-E211-AF56-002618943984.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/1087BBB4-915F-E211-8249-003048679168.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/1E745A99-905F-E211-B129-003048678FC4.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/141C66FF-8F5F-E211-A330-00261894389F.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/1ACEB946-925F-E211-BE87-0030486792AC.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/2211F5B1-915F-E211-92DC-002618943821.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/28210C69-8F5F-E211-BBE2-003048678ADA.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/2A0D49D8-905F-E211-B330-003048678F74.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/1C0141A8-925F-E211-805F-003048FFD752.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/2E1D0B18-8F5F-E211-BB06-002618FDA248.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/30368C21-8F5F-E211-8C21-003048678BC6.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/30FC936A-915F-E211-BA37-002618943913.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/2012E152-925F-E211-94D5-002618943856.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/32EBD793-925F-E211-AC8B-002618943829.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/38092F24-915F-E211-909F-002590596498.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/38462CB7-915F-E211-93A4-002354EF3BDB.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/3A595BB4-915F-E211-BB2F-00261894385A.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/3A7A7EB1-915F-E211-9D9D-00304867915A.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/3A9AEF51-925F-E211-AC9D-0026189438CC.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/3ADEEA1F-8F5F-E211-B470-00259059649C.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/3C07BF64-915F-E211-AE7B-00261894387B.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/3C0E075B-925F-E211-978D-002354EF3BE2.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/3C7CBDD3-905F-E211-B32E-0026189438FE.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/201327D6-905F-E211-AD4E-003048678AE4.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/2C986442-925F-E211-814F-003048678ADA.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/3CEE80AE-8F5F-E211-AE26-00304867903E.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/3CF52E4C-925F-E211-BEB0-003048679180.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/320CD819-915F-E211-BEDD-0026189438CB.root',
+                '/store/mc/Summer12/MinBias_TuneZ2star_8TeV-pythia6/GEN-SIM-RAW/EflowHpu_NoPileUp_START53_V7C-v1/10000/3C95B45F-905F-E211-8702-003048678F74.root',
+                ]))
+    # }}}
+elif mc and pu == 'none' and alt and reco:
+    # {{{
+    process.source = cms.Source('PoolSource',
+            fileNames = cms.untracked.vstring([
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/3C08C1F1-5065-E211-B3A6-003048678AE2.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/3A271A37-4F65-E211-A98A-003048678F9C.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/3A1544AB-4F65-E211-9B49-003048679248.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/38EC1D77-4D65-E211-AF4D-0025905964BA.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/344A2207-5065-E211-A27D-003048679296.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/30F9A918-3E65-E211-8246-0025905938A4.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/305CDDC5-4F65-E211-96C4-003048678FD6.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/2E9BA7A2-4865-E211-9858-0025905822B6.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/2E4969BE-4465-E211-8521-003048FF9AA6.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/2E45483C-4165-E211-B475-002590596486.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/2CC67A4E-4B65-E211-A5ED-0026189438A9.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/2CB28AA2-4B65-E211-B48F-0030486792B6.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/285351DB-4F65-E211-8466-002590593902.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/26ED9768-4D65-E211-B5FA-003048678BAE.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/242374A2-3565-E211-96AF-003048FFD736.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/22EC8AF0-4A65-E211-A62D-003048679084.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/224BE255-5265-E211-B639-002590593920.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/1CB683C7-3465-E211-97D2-003048FFD75C.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/1C9C9EB8-3D65-E211-8CE3-00259059649C.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/1C8A80EE-4165-E211-AC9A-003048FFD71A.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/1A4AE567-4165-E211-9217-002590593902.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/16ADE404-2365-E211-87F8-0025905964BE.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/165C6D22-5065-E211-98D6-00259059391E.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/16113393-5065-E211-B88D-00248C0BE012.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/12110058-5965-E211-B410-0026189438D5.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/10BC2D25-6065-E211-9298-002354EF3BDB.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0EA63E52-4E65-E211-A506-002618943807.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0AB9DA8B-4B65-E211-84D4-003048FF9AA6.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0A7FE46A-4C65-E211-8FA4-003048678AC0.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0A676389-3F65-E211-AF88-003048FFD730.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0A5B88AA-5065-E211-9465-0025905964C2.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/08B7C273-2065-E211-8652-0025905964C2.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/RECODEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0895C8E1-4B65-E211-82FA-003048FFD7BE.root',
+                ]))
+    # }}}
+elif mc and pu == 'none' and alt and raw:
+    # {{{
+    process.source = cms.Source('PoolSource',
+            fileNames = cms.untracked.vstring([
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/FEED0816-1961-E211-8FF5-00248C55CC97.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/00011113-F560-E211-A8A3-00259059391E.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0246EE0C-1D61-E211-80A7-0026189438D9.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/02D1A40C-FA60-E211-9CF8-003048FFD76E.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/000C6D77-1561-E211-9F77-003048FFD754.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/00815041-1161-E211-8362-003048FFCBA8.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/042F31C0-0E61-E211-AB6B-003048FFD754.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/043A7A0B-1A61-E211-ABF0-003048FFD752.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/04FE5529-2061-E211-B1E3-002590593872.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0209A169-0961-E211-80A4-0026189438BA.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/066E26BF-1561-E211-B162-0025905964C2.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/02E617D4-1861-E211-ADD3-00261894396F.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0809708B-0861-E211-8031-003048FFD71E.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0866AD66-1F61-E211-B82A-003048FFD7C2.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0A31E6A4-0361-E211-9400-002354EF3BE1.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0A5C75F6-1061-E211-957B-003048FF9AA6.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0C6B2B92-F960-E211-8A0F-003048FFCB74.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0C8B9AE2-1461-E211-9C38-003048FF86CA.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0CCC6426-FD60-E211-BE83-003048FFCB6A.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/04096F44-1861-E211-B08F-003048FFCBB0.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0EC41771-0561-E211-8BC8-003048FFD760.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0EF123A7-1D61-E211-8739-003048FFD760.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0635770D-1461-E211-93DF-003048FFD7D4.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0689B457-0B61-E211-8C46-003048FFD730.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/10C38753-F360-E211-BAC1-003048FF9AA6.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/10CE8884-1A61-E211-B38A-002354EF3BE1.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/0CE0F559-1F61-E211-A381-003048FFD720.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/146E20AB-F460-E211-AE94-0025905822B6.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/10137B93-0661-E211-ADE9-003048678FAE.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/161A7E5B-1F61-E211-AC94-003048FFD7A2.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/1654308C-1661-E211-AFDA-002618FDA28E.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/166D00DE-FE60-E211-A87F-0026189438BA.root',
+                '/store/mc/Summer12/MB8TeVEtanoCasHFShoLib/GEN-SIM-RAWDEBUG/EflowHpu_NoPileUp_START53_V16-v1/10000/169F3808-1A61-E211-ABCD-002590596468.root',
                 ]))
     # }}}
 elif data and pu == 'low':
