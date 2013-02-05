@@ -267,14 +267,13 @@ if mc:
             process.__setattr__(m.label(), m)
             process.p *= m
 
-if raw:
-    process.load("L1Trigger.GlobalTriggerAnalyzer.l1GtTrigReport_cfi")
-    if reemul:
-        process.l1GtTrigReport.L1GtRecordInputTag = "simGtDigis"
-    else:
-        process.l1GtTrigReport.L1GtRecordInputTag = "gtDigis"
-    process.l1GtTrigReport.PrintVerbosity = 1
-    process.p *= process.l1GtTrigReport
+process.load("L1Trigger.GlobalTriggerAnalyzer.l1GtTrigReport_cfi")
+if reemul:
+    process.l1GtTrigReport.L1GtRecordInputTag = "simGtDigis"
+else:
+    process.l1GtTrigReport.L1GtRecordInputTag = "gtDigis"
+process.l1GtTrigReport.PrintVerbosity = 1
+process.p *= process.l1GtTrigReport
 
 process.schedule = cms.Schedule(process.q, process.p)
 
