@@ -107,11 +107,6 @@ if do_reco:
     process.ecalGlobalUncalibRecHit.kPoorRecoFlagEB = cms.bool(False)
     process.ecalGlobalUncalibRecHit.kPoorRecoFlagEE = cms.bool(False)
 
-if data:
-    process.load('Configuration.StandardSequences.RawToDigi_Data_cff')
-else:
-    process.load('Configuration.StandardSequences.RawToDigi_cff')
-
 process.p = cms.Path() # for plots
 process.q = cms.Path() # for reemulation
 
@@ -134,6 +129,19 @@ if reco and pu == 'none' and onepv:
             maxNumber = cms.uint32(1),
             filter = cms.bool(True))
     process.p *= process.vfilter
+
+# import HLTrigger.HLTfilters.triggerResultsFilter_cfi as hlt
+# process.ZeroBiasAve = hlt.triggerResultsFilter.clone()
+# process.ZeroBiasAve.triggerConditions = cms.vstring('HLT_ZeroBias*',)
+# process.ZeroBiasAve.hltResults = cms.InputTag( "TriggerResults", "", "HLT" )
+# process.ZeroBiasAve.l1tResults = cms.InputTag("")
+# process.ZeroBiasAve.throw = cms.bool( False )
+# process.zerobias = cms.Path(process.ZeroBiasAve)
+
+if data:
+    process.load('Configuration.StandardSequences.RawToDigi_Data_cff')
+else:
+    process.load('Configuration.StandardSequences.RawToDigi_cff')
 
 if raw or do_reco:
     process.q *= process.RawToDigi
