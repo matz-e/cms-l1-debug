@@ -671,6 +671,9 @@ elif mc and pu == '66':
                 '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU66_noOOT_START53_V7B-v2/00000/00124F6F-9C27-E211-A055-003048FFD732.root'
                 ]))
     # }}}
+else:
+    process.source = cms.Source('PoolSource',
+            fileNames = cms.untracked.vstring([]))
 
 if debug:
     print process.dumpPython()
