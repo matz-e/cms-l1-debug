@@ -89,9 +89,9 @@ TrackPlotter::TrackPlotter(const edm::ParameterSet& config) :
 
    chi2_ = fs->make<TH1D>("chi2", "#chi^{2} / ndof;#chi^{2} / ndof;Tracks",
          100, 0., 5.);
-   dxy_ = fs->make<TH1D>("dxy", "d_{xy} / #sigma(d_{xy});d_{xy} / #sigma(d_{xy});Tracks",
+   dxy_ = fs->make<TH1D>("dxy", "WIP d_{xy} / #sigma(d_{xy});d_{xy} / #sigma(d_{xy});Tracks",
          250, 0., 25.);
-   dz_ = fs->make<TH1D>("dz", "d_{z} / #sigma(d_{z});d_{z} / #sigma(d_{z});Tracks",
+   dz_ = fs->make<TH1D>("dz", "WIP d_{z} / #sigma(d_{z});d_{z} / #sigma(d_{z});Tracks",
          250, 0., 25.);
    hits_pixel_ = fs->make<TH1D>("hits_pixel", "Hits in the pixel tracker;Pixel hits;Tracks",
          11, -.5, 10.5);
@@ -101,7 +101,7 @@ TrackPlotter::TrackPlotter(const edm::ParameterSet& config) :
          750, 0., 1500.);
    pt_tot_ = fs->make<TH1D>("pt_tot", "#sum p_{T} per event;#sum p_{T} [GeV];Num",
          750, 0., 1500.);
-   vertex_z_ = fs->make<TH1D>("vertex_z", "#delta z;#delta z;Num",
+   vertex_z_ = fs->make<TH1D>("vertex_z", "WIP #delta z;#delta z;Num",
          80, -2.5, 2.5);
 
    tracks_ = fs->make<TH1D>("tracks", "# of tracks;n_{tracks};Num", 299, 1, 299);
