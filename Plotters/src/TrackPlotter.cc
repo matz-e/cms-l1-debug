@@ -131,6 +131,10 @@ TrackPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    double pt_tot = 0.;
    reco::Vertex::trackRef_iterator its;
    for (its = vert->tracks_begin(); its != vert->tracks_end(); ++its) {
+      // Cut out small p_t
+      if ((*its)->pt() < .5)
+         continue;
+
       pt_tot += (*its)->pt();
 
       chi2_->Fill((*its)->normalizedChi2(), weight);
@@ -144,10 +148,6 @@ TrackPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 
       pt_->Fill((*its)->pt(), weight);
       vertex_z_->Fill((*its)->dz(), weight);
-
-      // Cut out small p_t
-      if ((*its)->pt() < .5)
-         continue;
 
       track_en_->Fill(
             double((*its)->eta()),
