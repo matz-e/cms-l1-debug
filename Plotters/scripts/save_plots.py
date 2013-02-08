@@ -343,29 +343,30 @@ def summarize(pdffile, files):
                 else:
                     plot_dict = plots
 
-                if key not in plot_dict:
-                    plot_dict[key] = [] if not subkey else {}
+                k = (basedir, key)
+                if k not in plot_dict:
+                    plot_dict[k] = [] if not subkey else {}
                 if subkey:
-                    if subkey not in plot_dict[key]:
-                        plot_dict[key][subkey] = []
-                    plot_dict[key][subkey].append((obj, leg, norm, basedir))
+                    if subkey not in plot_dict[k]:
+                        plot_dict[k][subkey] = []
+                    plot_dict[k][subkey].append((obj, leg, norm))
                 else:
-                    plot_dict[key].append((obj, leg, norm, basedir))
+                    plot_dict[k].append((obj, leg, norm))
 
-    for key, objs in plots.items():
-        ps, ls, ns, ds = zip(*objs) # unzip
+    for (basedir, key), objs in plots.items():
+        ps, ls, ns = zip(*objs) # unzip
         if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F]:
             continue
         if key in override_limits:
             s = create_stack(ps, ls, ns, limits=override_limits[key])
         else:
             s = create_stack(ps, ls, ns)
-        plot_stacks([s], pdffile.format(p=key, d=ds[0]))
+        plot_stacks([s], pdffile.format(p=key, d=basedir))
         s[0].logplot = True
-        plot_stacks([s], pdffile.format(p=key + '_log', d=ds[0]))
+        plot_stacks([s], pdffile.format(p=key + '_log', d=basedir))
 
     for plot_dict in (plots_digi, plots_tp):
-        for (key, subdict) in plot_dict.items():
+        for ((basedir, key), subdict) in plot_dict.items():
             limits = (float('inf'), 0)
             for lst in subdict.values():
                 for tpl in lst:
@@ -373,15 +374,15 @@ def summarize(pdffile, files):
             print key, limits
             for subkey, objs in subdict.items():
                 real_key = '_'.join([key, subkey])
-                ps, ls, ns, ds = zip(*objs) # unzip
+                ps, ls, ns = zip(*objs) # unzip
                 if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F]:
                     continue
                 s = create_stack(ps, ls, ns, limits=limits)
-                plot_stacks([s], pdffile.format(p=real_key, d=ds[0]))
+                plot_stacks([s], pdffile.format(p=real_key, d=basedir))
                 s[0].logplot = True
-                plot_stacks([s], pdffile.format(p=real_key + '_log', d=ds[0]))
+                plot_stacks([s], pdffile.format(p=real_key + '_log', d=basedir))
 
-    for (key, subdict) in plots_2d.items():
+    for ((basedir, key), subdict) in plots_2d.items():
         class FixedProj:
             def __init__(self, proj):
                 self.__proj = proj
@@ -410,23 +411,22 @@ def summarize(pdffile, files):
                 norm_by_event = '_' not in subkey
                 real_key = '_'.join([key, subkey, axis])
 
-                qdir = objs[0][3].lower()
-                if 'calo' in qdir:
+                if 'calo' in basedir:
                     quant = 'Region'
-                elif 'digi' in qdir or 'trigprim' in qdir:
+                elif 'digi' in basedir or 'trigprim' in basedir:
                     quant = 'Digi'
-                elif 'jet' in qdir:
+                elif 'jet' in basedir:
                     quant = 'Jet'
-                elif 'rechit' in qdir:
+                elif 'rechit' in basedir:
                     quant = 'RecHit'
-                elif 'track' in qdir:
+                elif 'track' in basedir:
                     quant = 'Track'
                 else:
-                    sys.stderr.write('Please add a quantity assignment for "{k}"\n.'.format(k=qdir))
+                    sys.stderr.write('Please add a quantity assignment for "{k}"\n.'.format(k=basedir))
                     raise
 
                 if not norm_by_event:
-                    tmp_ps, ls, ns, ds = zip(*objs)
+                    tmp_ps, ls, ns = zip(*objs)
                     ps = []
                     for (val, mp) in tmp_ps:
                         tmp_v = proj(val)
@@ -435,14 +435,14 @@ def summarize(pdffile, files):
                         tmp_v.SetYTitle(val.GetZaxis().GetTitle() + ' / ' + quant)
                         ps.append(tmp_v)
                 else:
-                    ps, ls, ns, ds = zip(*objs) # unzip
+                    ps, ls, ns = zip(*objs) # unzip
                     ps = map(proj, ps)
                 if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F]:
                     continue
                 s = create_stack(ps, ls, ns, adjustlimits=False, normalized=norm_by_event)
-                plot_stacks([s], pdffile.format(p=real_key, d=ds[0]))
+                plot_stacks([s], pdffile.format(p=real_key, d=basedir))
                 s[0].logplot = True
-                plot_stacks([s], pdffile.format(p=real_key + '_log', d=ds[0]))
+                plot_stacks([s], pdffile.format(p=real_key + '_log', d=basedir))
         
         # print subdict.keys()
 
