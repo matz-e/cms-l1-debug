@@ -5,6 +5,7 @@ mc_cmp = False
 # Argument parsing
 # vvv
 
+import re
 import sys
 
 if len(sys.argv) > 1 and sys.argv[1].endswith('.py'):
@@ -22,7 +23,8 @@ for arg in argv:
 
     (k, v) = map(str.strip, arg.split('='))
     if k not in globals():
-        raise "Unknown argument '%s'!" % (k,)
+        print "unknown argument '%s'!\n" % (k,)
+        sys.exit(1)
     if type(globals()[k]) == bool:
         globals()[k] = v.lower() in ('y', 'yes', 'true', 't', '1')
     else:
@@ -38,112 +40,190 @@ r.gROOT.SetBatch()
 r.gROOT.SetStyle('Modern')
 
 r.gStyle.SetTitleBorderSize(0)
+r.gStyle.SetOptStat(0)
 # r.gStyle.SetTitleAlign(22)
 
-override_limits = {
-        'ecal_en_tot': (0, 750)
-        }
+override_limits = { 'ecal_en_tot': (0, 750) }
 
-class MHStack(r.THStack):
-    def __init__(self, name='', title='', legend=None, logplot=False,
-            limits=None):
-        r.THStack.__init__(self, name, title)
-        self.legend = legend
-        self.logplot = logplot
-        self.limits = limits
-
-    def Draw(self):
-        r.THStack.Draw(self, "nostack")
-        if self.limits:
-            self.GetXaxis().SetRangeUser(*self.limits)
-
-def get_limits(hist):
-    x_max = hist.GetXaxis().GetXmax()
-
-    i = hist.GetNbinsX()
-    sec = False
-    while i > 0:
-        if hist.GetBinContent(i) > 0:
-            if sec:
-                break
-            else:
-                sec = True
-                i -= 1
-                continue
+class Plots:
+    def __init__(self, title='', legend=None, logplot=False,
+            limits=None, adjust=False):
+        self.__adjust = adjust or (limits is None)
+        if legend:
+            self.__legend = legend
         else:
-            sec = False
-        x_max = hist.GetBinLowEdge(i)
-        i -= 1
+            self.__legend = r.TLegend(.2, .825, .8, .925)
+        self.__limits = limits
+        self.__logplot = logplot
+        self.__plots = []
+        self.__title = title
 
-    i = 1
-    sec = False
-    x_min = 0
-    while x_min < x_max:
-        if hist.GetBinContent(i) > 0:
-            if sec:
-                break
+    def add(self, plot, legend_title):
+        self.__plots.append(plot)
+
+        style = "l"
+        if isinstance(plot, r.TProfile) or "data" in legend_title.lower():
+            style = "p"
+        self.__legend.AddEntry(plot, legend_title, style) 
+
+        xmax = self.find_limit(plot)
+        xmin = self.find_limit(plot, False)
+        if self.__adjust:
+            if self.__limits:
+                self.__limits = (
+                        min(self.__limits[0], xmin),
+                        max(self.__limits[1], xmax))
             else:
-                sec = True
-                i += 1
-                continue
+                self.__limits = (xmin, xmax)
+
+    def find_limit(self, plot, upper=True):
+        nbins = plot.GetNbinsX()
+        bins = [plot.GetBinContent(i) for i in range(1, nbins)]
+
+        index = []
+        for (i, bin) in enumerate(bins[:-1]):
+            index.append(bin > 0 and bins[i + 1] > 0)
+
+        if True not in index:
+            index = map(lambda b: b > 0, bins)
+        if True not in index:
+            return 0
+
+        if upper:
+            bound = plot.GetBinLowEdge(nbins + 1 - list(reversed(index)).index(True))
         else:
-            sec = False
-        x_min = hist.GetBinLowEdge(i)
-        i += 1
+            bound = plot.GetBinLowEdge(index.index(True) + 1)
+        return bound
 
-    extend_by = (x_max - x_min) / 10
-    return (max(0, x_min - extend_by), x_max + extend_by)
+    def draw(self, pad=r.gPad):
+        self.__legend.SetNColumns(
+                int(math.ceil(len(self.__plots) / 2.)))
 
-def greater(l1, l2):
-    return (min(l1[0], l2[0]), max(l1[1], l2[1]))
+        pad.Divide(1,2)
+        pad.GetPad(1).SetPad(0., .333, 1., 1.)
+        pad.GetPad(2).SetPad(0., 0., 1., .333)
+
+        pad.cd(1)
+        r.gPad.SetBottomMargin(1e-5)
+        r.gPad.SetTopMargin(.05)
+        r.gPad.SetTickx(2)
+        r.gPad.Modified()
+        if self.__logplot:
+            r.gPad.SetLogy(True)
+
+        first = True
+        for plt in reversed(self.__plots):
+            if first:
+                plt.SetTitle(self.__title)
+                plt.SetTitle("")
+
+                xaxis_up = plt.GetXaxis()
+                yaxis_up = plt.GetYaxis()
+                if self.__limits:
+                    xaxis_up.SetRangeUser(*self.__limits)
+                yaxis_up.SetTickLength(.02)
+
+                plt.DrawCopy()
+                first = False
+            else:
+                plt.DrawCopy("same")
+
+        self.__legend.Draw()
+
+        pad.cd(2)
+        r.gPad.SetBottomMargin(.3)
+        r.gPad.SetTopMargin(1e-5)
+        r.gPad.SetTickx(1)
+
+        ref = self.__plots[0].Clone()
+        rel_plts = []
+
+        ymax, ymin = 1.1, 0.9
+
+        for plt in self.__plots[1:]:
+            copy = plt.Clone()
+            copy.Divide(ref)
+            ymin = min(copy.GetMinimum(.0001), ymin)
+            ymax = max(copy.GetMaximum(), ymax)
+
+        r.gPad.SetLogy(True)
+
+        first = True
+        for plt in reversed(self.__plots[1:]):
+            copy = plt.Clone()
+            copy.SetTitle(self.__title)
+            copy.SetTitle("")
+            copy.Divide(ref)
+            if self.__limits:
+                copy.GetXaxis().SetRangeUser(*self.__limits)
+
+            if "p" in copy.GetOption().lower():
+                copy.SetOption("")
+                opt = "hist p"
+            else:
+                copy.SetOption("")
+                opt = "hist l"
+
+            if first:
+                xaxis_down = copy.GetXaxis()
+                xaxis_down.SetLabelSize(2 * xaxis_up.GetLabelSize())
+                xaxis_down.SetTickLength(.06)
+                xaxis_down.SetTitleOffset(1.2)
+                xaxis_down.SetTitleSize(2 * xaxis_up.GetTitleSize())
+                xaxis_down.SetTitle(xaxis_up.GetTitle())
+
+                yaxis_down = copy.GetYaxis()
+                yaxis_down.SetTitle("relative")
+                yaxis_down.SetTickLength(.03)
+                yaxis_down.SetLabelSize(2 * yaxis_up.GetLabelSize())
+                yaxis_down.SetTitleOffset(.5)
+                yaxis_down.SetTitleSize(2 * yaxis_up.GetTitleSize())
+                yaxis_down.SetRangeUser(ymin, ymax)
+
+                copy.DrawCopy(opt)
+                first = False
+            else:
+                copy.DrawCopy("same" + opt)
+            rel_plts.append(copy)
+
+        pad.Modified()
+        pad.Update()
+
+    def get_legend(self):
+        return self.__legend
+
+    def is_logplot(self):
+        return self.__logplot
+
+    def set_logplot(self, log):
+        self.__logplot = log
+
+    def set_title(self, title):
+        self.__title = title
+
+    def get_title(self):
+        return self.__title
 
 def create_stack(hists, files, norms=None, adjustlimits=True, limits=None, logplot=False, normalized=True, 
         title=''):
-    l = r.TLegend(.1, .1, .9, .9)
-    l.SetNColumns(min(len(files), 3 if not mc_cmp else 4))
+    # l.SetNColumns(min(len(files), 3 if not mc_cmp else 4))
 
-    stack = MHStack(legend=l, logplot=logplot, limits=limits)
-    stack_rel = MHStack(legend=l, logplot=logplot, limits=limits)
+    stack = Plots(logplot=logplot, limits=limits)
+    stack_rel = Plots(logplot=logplot, limits=limits)
 
-    new_limits = (float('inf'), 0)
-
-    norm_hist = None
-    for (h, f, n, c) in zip(hists, files, norms, range(1, len(files) + 1)):
-        # h.SetLineColor(c)
+    for (h, f, n) in zip(hists, files, norms):
         if normalized:
             h.Scale(1. / n)
             h.SetYTitle(h.GetYaxis().GetTitle() + ' / event')
-
-        if not norm_hist:
-            norm_hist = h.Clone()
 
         if title == '':
             title = ";".join((h.GetTitle(),
                     h.GetXaxis().GetTitle(),
                     h.GetYaxis().GetTitle()))
 
-        new_limits = greater(new_limits, get_limits(h))
-
-        stack.Add(h)
-        stack.SetTitle(title)
-
-        h_rel = h.Clone()
-        h_rel.Divide(norm_hist)
-        yax = h_rel.GetYaxis()
-        # try to set axis range nicer with some magic numbers
-        yax.SetRangeUser(
-                max(.7, yax.GetXmin()),
-                max(3., yax.GetXmax() * 8))
-
-        stack_rel.Add(h_rel)
-        stack_rel.SetTitle(title)
-
-        l.AddEntry(h, f, "l")
-
-    if not limits and adjustlimits:
-        stack.limits = new_limits
-        stack_rel.limits = new_limits
-    return (stack, stack_rel)
+        stack.add(h, f)
+        stack.set_title(title)
+    return stack
 
 def plot_stacks(stacks, filename, width=None):
     dirname = os.path.dirname(filename)
@@ -159,55 +239,28 @@ def plot_stacks(stacks, filename, width=None):
     c = r.TCanvas("c", "", width * 600, height * 600)
     c.Divide(width, height)
 
-    for (s, n) in zip(stacks, range(1, len(stacks) + 1)):
+    for (n, s) in enumerate(stacks, 1):
         c.cd(n)
-        p = c.GetPad(n)
-        p.SetTitle(s[0].GetTitle())
-        p.Divide(1, 3)
-
-        p.cd(3)
-        p.GetPad(3).SetPad(0., 0., 1., .1)
-        s[0].legend.Draw()
-        
-        p.cd(1)
-        r.gPad.SetPad(0., .4, 1., 1.)
-        if s[0].logplot:
-            p.GetPad(1).SetLogy(True)
-        s[0].Draw()
-        # s[0].GetHists()[0].Draw("same P")
-        r.gPad.SetBottomMargin(1e-5)
-        r.gPad.SetTopMargin(.15)
-        r.gPad.SetTickx(2)
-        r.gPad.Modified()
-
-        p.cd(2)
-        p.GetPad(2).SetPad(0., .1, 1., .4)
-        # if s[1].logplot:
-        p.GetPad(2).SetLogy(True)
-        s[1].SetTitle("")
-        s[1].Draw()
-        # s[1].GetHists()[0].Draw("same")
-        s[1].GetYaxis().SetTitle("relative")
-        s[1].GetYaxis().SetLabelSize(2 * s[0].GetYaxis().GetLabelSize())
-        s[1].GetYaxis().SetTitleOffset(.5)
-        s[1].GetYaxis().SetTitleSize(2 * s[0].GetYaxis().GetTitleSize())
-        s[1].GetXaxis().SetLabelSize(2 * s[0].GetXaxis().GetLabelSize())
-        s[1].GetXaxis().SetTickLength(.06)
-        s[1].GetXaxis().SetTitleOffset(1.2)
-        s[1].GetXaxis().SetTitleSize(2 * s[0].GetXaxis().GetTitleSize())
-        s[1].GetXaxis().SetTitle(s[0].GetXaxis().GetTitle())
-
-        r.gPad.Update()
-        r.gPad.SetTopMargin(1e-5)
-        r.gPad.SetBottomMargin(.3)
-        r.gPad.SetTickx(1)
-        r.gPad.Modified()
-    c.Update()
+        s.draw(c.GetPad(n))
     c.SaveAs(filename)
 
 last_color = 0
 colors = {}
 counts = {}
+modifiers = {
+    'hf': 'mod HF',
+    '1pv': '1 PV'
+}
+pileup = {
+    '66': 'PU66',
+    '45': 'PU45',
+    '2012C': '2012C'
+}
+
+data_colors = [1, 11, 14, 12]
+data_files = []
+mc_colors = [2, 8, 9, 6, 7]
+mc_files = []
 
 def legend(path, hist):
     """
@@ -217,38 +270,77 @@ def legend(path, hist):
     f, dir = path.split(':', 1)
     basedir = dir.lower().strip('/')
 
+    m = re.search(r'plots_([a-zA-Z0-9]+)(?:_([^_]+))?_(?:([a-zA-Z0-9+]+)-)(\w+).root$', f)
+    if m:
+        (label, mod, tier, pu) = m.groups()
+        if label == 'mc':
+            label = label.upper()
+            if f not in mc_files:
+                mc_files.append(f)
+            if isinstance(hist, r.TProfile):
+                hist.SetOption("P E")
+            hist.SetLineColor(mc_colors[mc_files.index(f)])
+            hist.SetMarkerColor(mc_colors[mc_files.index(f)])
+            hist.SetMarkerStyle(25)
+            hist.SetMarkerSize(1)
+        elif label == 'data':
+            label = label.capitalize()
+            if isinstance(hist, r.TProfile):
+                hist.SetOption("P E")
+            if f not in data_files:
+                data_files.append(f)
+            hist.SetLineColor(data_colors[data_files.index(f)])
+            hist.SetMarkerColor(data_colors[data_files.index(f)])
+            hist.SetMarkerStyle(8)
+            hist.SetMarkerSize(1)
+        else:
+            raise
+
+        label += ' ' + pileup[pu]
+
+        if mod:
+            label += ' {m}'.format(m=modifiers[mod] if mod in modifiers else mod)
+                
+    else:
+        sys.stderr.write('filename does not match expected pattern: \
+                {f}\n'.format(f=f))
+        raise
+
     n = counts[f][0]
     # Hack to get the right normalization for pileup histograms
     if 'pileup' in f:
         hist.Scale(1. / hist.Integral())
         n = 1
 
-    if 'data' in f:
-        label = 'Data'
+    if 'data' in label.lower():
         color = 1
         # hist.SetMarkerSize(3)
         hist.SetMarkerStyle(r.kFullDotMedium)
     elif 'reweighted' in dir.lower():
-        label = 'MC rw.'
+        label += ' rw.'
         color = 3
     else:
-        label = 'MC'
         color = 2
 
+    if mod:
+        color += 2
+
     if mc_cmp:
-        m = re.search(r'Tune[^_]+', f)
-        if not m:
-            raise
-
-        label = m.group(0)
-
-        if 'reweighted' in dir.lower():
-            label += ' rw.'
-
         if f not in colors:
             globals()['last_color'] += 1
             colors[f] = last_color
         color = colors[f]
+        try:
+            m = re.search(r'Tune[^_]+', f)
+            if not m:
+                raise
+
+            label = m.group(0)
+
+            if 'reweighted' in dir.lower():
+                label += ' rw.'
+        except:
+            pass
 
     if 'reemul' in basedir:
         basedir = basedir.replace('reemul', '')
@@ -355,31 +447,34 @@ def summarize(pdffile, files):
 
     for (basedir, key), objs in plots.items():
         ps, ls, ns = zip(*objs) # unzip
-        if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F]:
+        if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F, r.TProfile]:
             continue
+
+        norm = not isinstance(ps[0], r.TProfile)
         if key in override_limits:
-            s = create_stack(ps, ls, ns, limits=override_limits[key])
+            s = create_stack(ps, ls, ns, limits=override_limits[key],
+                    normalized=norm)
         else:
-            s = create_stack(ps, ls, ns)
+            s = create_stack(ps, ls, ns, normalized=norm)
         plot_stacks([s], pdffile.format(p=key, d=basedir))
-        s[0].logplot = True
+        s.set_logplot(True)
         plot_stacks([s], pdffile.format(p=key + '_log', d=basedir))
 
     for plot_dict in (plots_digi, plots_tp):
         for ((basedir, key), subdict) in plot_dict.items():
-            limits = (float('inf'), 0)
-            for lst in subdict.values():
-                for tpl in lst:
-                    limits = greater(limits, get_limits(tpl[0]))
-            print key, limits
+            # limits = (float('inf'), 0)
+            # for lst in subdict.values():
+                # for tpl in lst:
+                    # limits = greater(limits, get_limits(tpl[0]))
+            # print key, limits
             for subkey, objs in subdict.items():
                 real_key = '_'.join([key, subkey])
                 ps, ls, ns = zip(*objs) # unzip
                 if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F]:
                     continue
-                s = create_stack(ps, ls, ns, limits=limits)
+                s = create_stack(ps, ls, ns)
                 plot_stacks([s], pdffile.format(p=real_key, d=basedir))
-                s[0].logplot = True
+                s.set_logplot(True)
                 plot_stacks([s], pdffile.format(p=real_key + '_log', d=basedir))
 
     for ((basedir, key), subdict) in plots_2d.items():
@@ -441,7 +536,7 @@ def summarize(pdffile, files):
                     continue
                 s = create_stack(ps, ls, ns, adjustlimits=False, normalized=norm_by_event)
                 plot_stacks([s], pdffile.format(p=real_key, d=basedir))
-                s[0].logplot = True
+                s.set_logplot(True)
                 plot_stacks([s], pdffile.format(p=real_key + '_log', d=basedir))
         
         # print subdict.keys()
