@@ -41,11 +41,13 @@
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
 #include "DataFormats/HcalRecHit/interface/HBHERecHit.h"
 #include "DataFormats/HcalRecHit/interface/HFRecHit.h"
+#include "DataFormats/VertexReco/interface/Vertex.h"
 
 #include "Debug/Plotters/interface/BasePlotter.h"
 
 #include "TH1D.h"
 #include "TH2D.h"
+#include "TProfile.h"
 
 //
 // class declaration
@@ -98,8 +100,14 @@ class RecHitPlotter : public edm::EDAnalyzer, BasePlotter {
       TH1D* hcal_hits_e2_;
       TH1D* hcal_hits_f_;
 
+      TProfile* ecal_et_tot_vtx_b_;
+      TProfile* ecal_et_tot_vtx_e_;
+      TProfile* hcal_et_tot_vtx_b_;
+      TProfile* hcal_et_tot_vtx_e_;
+
       double cut_;
 
+      edm::InputTag vertices_;
       std::vector<edm::InputTag> ecalHits_;
       std::vector<edm::InputTag> hcalHits_;
 };
@@ -108,6 +116,7 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
    edm::EDAnalyzer(),
    BasePlotter(config),
    cut_(config.getUntrackedParameter<double>("cut", -.1)),
+   vertices_(config.getParameter<edm::InputTag>("vertices")),
    ecalHits_(config.getParameter< std::vector<edm::InputTag> >("ecalHits")),
    hcalHits_(config.getParameter< std::vector<edm::InputTag> >("hcalHits"))
 {
@@ -203,6 +212,15 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
    hcal_hits_f_ = fs->make<TH1D>("hcal_hits_f",
          "Hits in the HCAL forward;n_{hits};Num",
          500, 0, 1000);
+
+   ecal_et_tot_vtx_b_ = fs->make<TProfile>("ecal_et_tot_vtx_b",
+         "EB #sum E_{T} vs. ##PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+   ecal_et_tot_vtx_e_ = fs->make<TProfile>("ecal_et_tot_vtx_e",
+         "EE #sum E_{T} vs. ##PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+   hcal_et_tot_vtx_b_ = fs->make<TProfile>("hcal_et_tot_vtx_b",
+         "HB #sum E_{T} vs. ##PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+   hcal_et_tot_vtx_e_ = fs->make<TProfile>("hcal_et_tot_vtx_e",
+         "HE #sum E_{T} vs. ##PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
 }
 
 RecHitPlotter::~RecHitPlotter() {}
@@ -211,6 +229,13 @@ void
 RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 {
    double weight = this->weight(event);
+
+   edm::Handle< std::vector<reco::Vertex> > vertices;
+   if (!event.getByLabel(vertices_, vertices)){
+      edm::LogError("RecHitPlotter") << "No valid vertices!" << std::endl;
+      return;
+   }
+   int nvtx = vertices->size();
 
    double ecal_e_tot_b = -1.;
    double ecal_e_tot_e = -1.;
@@ -241,6 +266,8 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       }
       ecal_en_tot_b_->Fill(ecal_e_tot_b, weight);
       ecal_hits_b_->Fill(ecal_hits_b, weight);
+
+      ecal_et_tot_vtx_b_->Fill(nvtx, ecal_e_tot_b, weight); 
    }
 
    edm::Handle< edm::SortedCollection<EcalRecHit> > ee_hits;
@@ -262,6 +289,8 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       }
       ecal_en_tot_e_->Fill(ecal_e_tot_e, weight);
       ecal_hits_e_->Fill(ecal_hits_e, weight);
+
+      ecal_et_tot_vtx_e_->Fill(nvtx, ecal_e_tot_e, weight); 
    }
 
    ecal_en_tot_->Fill(ecal_e_tot_b + ecal_e_tot_e, weight);
@@ -327,6 +356,9 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       hcal_hits_e_->Fill(hcal_hits_e1 + hcal_hits_e2, weight);
       hcal_hits_e1_->Fill(hcal_hits_e1, weight);
       hcal_hits_e2_->Fill(hcal_hits_e2, weight);
+
+      hcal_et_tot_vtx_b_->Fill(nvtx, hcal_e_tot_b, weight); 
+      hcal_et_tot_vtx_e_->Fill(nvtx, hcal_e_tot_e1 + hcal_e_tot_e2, weight); 
    }
 
    edm::Handle< edm::SortedCollection<HFRecHit> > hf_hits;

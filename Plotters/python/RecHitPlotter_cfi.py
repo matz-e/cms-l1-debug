@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 recHitPlotter = cms.EDAnalyzer('RecHitPlotter',
+        vertices = cms.InputTag('offlinePrimaryVertices'),
         ecalHits = cms.VInputTag(
             cms.InputTag('ecalRecHit', 'EcalRecHitsEB'),
             cms.InputTag('ecalRecHit', 'EcalRecHitsEE')),
@@ -9,6 +10,7 @@ recHitPlotter = cms.EDAnalyzer('RecHitPlotter',
             cms.InputTag('hfreco', '')))
 
 reducedRecHitPlotter = cms.EDAnalyzer('RecHitPlotter',
+        vertices = cms.InputTag('offlinePrimaryVertices'),
         ecalHits = cms.VInputTag(
             cms.InputTag('reducedEcalRecHitsEB', ''),
             cms.InputTag('reducedEcalRecHitsEE', '')),
