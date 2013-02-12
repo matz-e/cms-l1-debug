@@ -120,6 +120,13 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
    ecalHits_(config.getParameter< std::vector<edm::InputTag> >("ecalHits")),
    hcalHits_(config.getParameter< std::vector<edm::InputTag> >("hcalHits"))
 {
+   int en_bins = 600;
+   int en_tot_bins = 5000;
+   int hits_bins = 600;
+   double en_max = 1200.;
+   double en_tot_max = 5000.;
+   double hits_max = 1200.;
+
    edm::Service<TFileService> fs;
    ecal_dist_en_ = fs->make<TH2D>("ecal_dist_en",
          "Energy of ECAL;#eta;#phi;E [GeV]",
@@ -135,92 +142,92 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
          59, -29.5, 29.5, 36, 0.5, 72.5);
 
    ecal_en_ = fs->make<TH1D>("ecal_en", "Energy in ECAL;E [GeV];Num",
-         400, 0., 80.);
+         en_bins, 0., en_max);
    ecal_en_tot_ = fs->make<TH1D>("ecal_en_tot", "Total energy in ECAL;E [GeV];Num",
-         700, 0., 350.);
+         en_tot_bins, 0., en_tot_max);
    ecal_hits_ = fs->make<TH1D>("ecal_hits", "Hits per event in the ECAL;n_{hits};Num",
-         500, 0, 1000);
+         hits_bins, 0, hits_max);
 
    ecal_en_b_ = fs->make<TH1D>("ecal_en_b",
          "Energy in the ECAL barrel;E [GeV];Num",
-         400, 0, 80);
+         en_bins, 0., en_max);
    ecal_en_e_ = fs->make<TH1D>("ecal_en_e",
          "Energy in the ECAL endcap;E [GeV];Num",
-         400, 0, 80);
+         en_bins, 0., en_max);
    ecal_en_tot_b_ = fs->make<TH1D>("ecal_en_tot_b",
          "Total energy in the ECAL barrel;#sum E [GeV];Num",
-         700, 0, 350);
+         en_tot_bins, 0., en_tot_max);
    ecal_en_tot_e_ = fs->make<TH1D>("ecal_en_tot_e",
          "Total energy in the ECAL endcap;#sum E [GeV];Num",
-         700, 0, 350);
+         en_tot_bins, 0., en_tot_max);
    ecal_hits_b_ = fs->make<TH1D>("ecal_hits_b",
          "Hits in the ECAL barrel;n_{hits};Num",
-         500, 0, 1000);
+         hits_bins, 0, hits_max);
    ecal_hits_e_ = fs->make<TH1D>("ecal_hits_e",
          "Hits in the ECAL endcap;n_{hits};Num",
-         500, 0, 1000);
+         hits_bins, 0, hits_max);
 
    hcal_en_ = fs->make<TH1D>("hcal_en", "Energy in HCAL;E [GeV];Num",
-         400, 0., 80.);
+         en_bins, 0., en_max);
    hcal_en_tot_ = fs->make<TH1D>("hcal_en_tot", "Total energy in HCAL;E [GeV];Num",
-         700, 0., 350.);
+         en_tot_bins, 0., en_tot_max);
    hcal_hits_ = fs->make<TH1D>("hcal_hits", "Hits per event in the HCAL;n_{hits};Num",
-         500, 0, 1000);
+         hits_bins, 0, hits_max);
 
    hcal_en_b_ = fs->make<TH1D>("hcal_en_b",
          "Energy in the HCAL barrel;E [GeV];Num",
-         400, 0, 80);
+         en_bins, 0., en_max);
    hcal_en_e_ = fs->make<TH1D>("hcal_en_e",
          "Energy in the HCAL endcap;E [GeV];Num",
-         400, 0, 80);
+         en_bins, 0., en_max);
    hcal_en_e1_ = fs->make<TH1D>("hcal_en_e1",
          "Energy in the HCAL endcap (|#eta| < 2.5);E [GeV];Num",
-         400, 0, 80);
+         en_bins, 0., en_max);
    hcal_en_e2_ = fs->make<TH1D>("hcal_en_e2",
          "Energy in the HCAL endcap (|#eta| > 2.5, ieta >= 27);E [GeV];Num",
-         400, 0, 80);
+         en_bins, 0., en_max);
    hcal_en_f_ = fs->make<TH1D>("hcal_en_f",
          "Energy in the HCAL forward;E [GeV];Num",
-         400, 0, 80);
+         en_bins, 0., en_max);
    hcal_en_tot_b_ = fs->make<TH1D>("hcal_en_tot_b",
          "Total energy in the HCAL barrel;#sum E [GeV];Num",
-         700, 0, 350);
+         en_tot_bins, 0., en_tot_max);
    hcal_en_tot_e_ = fs->make<TH1D>("hcal_en_tot_e",
          "Total energy in the HCAL endcap;#sum E [GeV];Num",
-         700, 0, 350);
+         en_tot_bins, 0., en_tot_max);
    hcal_en_tot_e1_ = fs->make<TH1D>("hcal_en_tot_e1",
          "Total energy in the HCAL endcap (|#eta| < 2.5);#sum E [GeV];Num",
-         700, 0, 350);
+         en_tot_bins, 0., en_tot_max);
    hcal_en_tot_e2_ = fs->make<TH1D>("hcal_en_tot_e2",
          "Total energy in the HCAL endcap (|#eta| > 2.5, ieta >= 27);#sum E [GeV];Num",
-         700, 0, 350);
+         en_tot_bins, 0., en_tot_max);
    hcal_en_tot_f_ = fs->make<TH1D>("hcal_en_tot_f",
          "Total energy in the HCAL forward;#sum E [GeV];Num",
-         700, 0, 350);
+         en_tot_bins, 0., en_tot_max);
    hcal_hits_b_ = fs->make<TH1D>("hcal_hits_b",
          "Hits in the HCAL barrel;n_{hits};Num",
-         500, 0, 1000);
+         hits_bins, 0, hits_max);
    hcal_hits_e_ = fs->make<TH1D>("hcal_hits_e",
          "Hits in the HCAL endcap;n_{hits};Num",
-         500, 0, 1000);
+         hits_bins, 0, hits_max);
    hcal_hits_e1_ = fs->make<TH1D>("hcal_hits_e1",
          "Hits in the HCAL endcap (|#eta| < 2.5);n_{hits};Num",
-         500, 0, 1000);
+         hits_bins, 0, hits_max);
    hcal_hits_e2_ = fs->make<TH1D>("hcal_hits_e2",
          "Hits in the HCAL endcap (|#eta| > 2.5, ieta >= 27);n_{hits};Num",
-         500, 0, 1000);
+         hits_bins, 0, hits_max);
    hcal_hits_f_ = fs->make<TH1D>("hcal_hits_f",
          "Hits in the HCAL forward;n_{hits};Num",
-         500, 0, 1000);
+         hits_bins, 0, hits_max);
 
    ecal_et_tot_vtx_b_ = fs->make<TProfile>("ecal_et_tot_vtx_b",
-         "EB #sum E_{T} vs. ##PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+         "EB <#sum E_{T}> vs. #PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
    ecal_et_tot_vtx_e_ = fs->make<TProfile>("ecal_et_tot_vtx_e",
-         "EE #sum E_{T} vs. ##PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+         "EE <#sum E_{T}> vs. #PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
    hcal_et_tot_vtx_b_ = fs->make<TProfile>("hcal_et_tot_vtx_b",
-         "HB #sum E_{T} vs. ##PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+         "HB <#sum E_{T}> vs. #PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
    hcal_et_tot_vtx_e_ = fs->make<TProfile>("hcal_et_tot_vtx_e",
-         "HE #sum E_{T} vs. ##PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+         "HE <#sum E_{T}> vs. #PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
 }
 
 RecHitPlotter::~RecHitPlotter() {}
