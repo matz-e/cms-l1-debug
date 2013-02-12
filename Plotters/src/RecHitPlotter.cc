@@ -242,7 +242,14 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       edm::LogError("RecHitPlotter") << "No valid vertices!" << std::endl;
       return;
    }
-   int nvtx = vertices->size();
+   int nvtx = 0;
+   for (const auto& v: *(vertices.product())) {
+      if (v.ndof() < 5 || fabs(v.z()) > 50 || fabs(v.position().rho()) > 2.)
+         continue;
+      nvtx++;
+   }
+
+   int nvtx_bin = (nvtx - 1) / 5;
 
    double ecal_e_tot_b = -1.;
    double ecal_e_tot_e = -1.;

@@ -122,7 +122,13 @@ TrackPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    }
 
    double weight = this->weight(event);
-   double n_vertices = double(vertex_h->size());
+   double n_vertices = 0;
+
+   for (const auto& v: *(vertex_h.product())) {
+      if (v.ndof() < 5 || fabs(v.z()) > 50 || fabs(v.position().rho()) > 2.)
+         continue;
+      n_vertices += 1.;
+   }
 
    // TODO why ref/pointer?
    const reco::Vertex *vert = &(vertex_h->front());
