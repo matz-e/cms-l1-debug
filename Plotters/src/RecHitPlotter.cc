@@ -100,6 +100,12 @@ class RecHitPlotter : public edm::EDAnalyzer, BasePlotter {
       TH1D* hcal_hits_e2_;
       TH1D* hcal_hits_f_;
 
+      TH1D* ecal_en_per_vtx_b_[20];
+      TH1D* ecal_en_per_vtx_e_[20];
+      TH1D* hcal_en_per_vtx_b_[20];
+      TH1D* hcal_en_per_vtx_e_[20];
+      TH1D* hcal_en_per_vtx_f_[20];
+
       TProfile* ecal_et_tot_vtx_b_;
       TProfile* ecal_et_tot_vtx_e_;
       TProfile* hcal_et_tot_vtx_b_;
@@ -220,6 +226,29 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
          "Hits in the HCAL forward;n_{hits};Num",
          hits_bins, 0, hits_max);
 
+   for (int i = 0; i < 20; ++i) {
+      ecal_en_per_vtx_b_[i] = fs->make<TH1D>(
+            TString::Format("ecal_en_per_vtx_b_%02d", i),
+            TString::Format("EB E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            en_bins, 0., en_max);
+      ecal_en_per_vtx_e_[i] = fs->make<TH1D>(
+            TString::Format("ecal_en_per_vtx_e_%02d", i),
+            TString::Format("EE E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            en_bins, 0., en_max);
+      hcal_en_per_vtx_b_[i] = fs->make<TH1D>(
+            TString::Format("hcal_en_per_vtx_b_%02d", i),
+            TString::Format("HB E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            en_bins, 0., en_max);
+      hcal_en_per_vtx_e_[i] = fs->make<TH1D>(
+            TString::Format("hcal_en_per_vtx_e_%02d", i),
+            TString::Format("HE E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            en_bins, 0., en_max);
+      hcal_en_per_vtx_f_[i] = fs->make<TH1D>(
+            TString::Format("hcal_en_per_vtx_f_%02d", i),
+            TString::Format("HF E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            en_bins, 0., en_max);
+   }
+
    ecal_et_tot_vtx_b_ = fs->make<TProfile>("ecal_et_tot_vtx_b",
          "EB <#sum E_{T}> vs. #PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
    ecal_et_tot_vtx_e_ = fs->make<TProfile>("ecal_et_tot_vtx_e",
@@ -277,6 +306,9 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          ecal_en_b_->Fill(hit->energy(), weight);
          ecal_dist_en_->Fill(id.ieta(), id.iphi(), hit->energy() * weight);
          ecal_dist_mp_->Fill(id.ieta(), id.iphi(), weight);
+
+         if (0 <= nvtx_bin && nvtx_bin < 20)
+            ecal_en_per_vtx_b_[nvtx_bin]->Fill(hit->energy(), weight);
       }
       ecal_en_tot_b_->Fill(ecal_e_tot_b, weight);
       ecal_hits_b_->Fill(ecal_hits_b, weight);
@@ -300,6 +332,9 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          ecal_e_tot_e += hit->energy();
          ecal_en_->Fill(hit->energy(), weight);
          ecal_en_e_->Fill(hit->energy(), weight);
+
+         if (0 <= nvtx_bin && nvtx_bin < 20)
+            ecal_en_per_vtx_e_[nvtx_bin]->Fill(hit->energy(), weight);
       }
       ecal_en_tot_e_->Fill(ecal_e_tot_e, weight);
       ecal_hits_e_->Fill(ecal_hits_e, weight);
@@ -344,8 +379,15 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
             ++hcal_hits_b;
             hcal_en_b_->Fill(hit->energy(), weight);
             hcal_e_tot_b += hit->energy();
+
+            if (0 <= nvtx_bin && nvtx_bin < 20)
+               hcal_en_per_vtx_b_[nvtx_bin]->Fill(hit->energy(), weight);
          } else if (id.subdet() == HcalEndcap) {
             hcal_en_e_->Fill(hit->energy(), weight);
+
+            if (0 <= nvtx_bin && nvtx_bin < 20)
+               hcal_en_per_vtx_e_[nvtx_bin]->Fill(hit->energy(), weight);
+
             // This checks the outer endcap
             if (id.ietaAbs() < 27) {
                ++hcal_hits_e1;
@@ -390,6 +432,9 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          ++hcal_hits_f;
          hcal_en_f_->Fill(hit->energy(), weight);
          hcal_e_tot_f += hit->energy();
+
+         if (0 <= nvtx_bin && nvtx_bin < 20)
+            hcal_en_per_vtx_f_[nvtx_bin]->Fill(hit->energy(), weight);
       }
 
       hcal_en_tot_f_->Fill(hcal_e_tot_f, weight);
