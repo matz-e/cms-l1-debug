@@ -284,8 +284,7 @@ if (raw and reco) or do_reco:
 if mc:
     process.p *= process.pileUpPlotter
 
-    import os.path
-    if os.path.exists(wfile) and os.path.isfile(wfile):
+    if wfile != 'please set me':
         class CreateWeighted:
             def __init__(self):
                 self.weighted = []
