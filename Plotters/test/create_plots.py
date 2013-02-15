@@ -112,25 +112,28 @@ process.p = cms.Path() # for plots
 process.q = cms.Path() # for reemulation
 
 if zerobias:
-    import HLTrigger.HLTfilters.triggerResultsFilter_cfi as hlt
-    process.ZeroBiasAve = hlt.triggerResultsFilter.clone()
-    process.ZeroBiasAve.triggerConditions = cms.vstring('HLT_ZeroBias*',)
-    process.ZeroBiasAve.hltResults = cms.InputTag( "TriggerResults", "", "HLT" )
-    process.ZeroBiasAve.l1tResults = cms.InputTag("")
-    process.ZeroBiasAve.throw = cms.bool( False )
-    process.p *= process.ZeroBiasAve
+    process.load('HLTrigger.HLTfilters.hltHighLevel_cfi')
+    process.hltHighLevel.HLTPaths = cms.vstring("HLT_ZeroBias_v*")
+    process.p *= process.hltHighLevel
 
 if minbias:
-    process.tfilter = cms.EDFilter( "TriggerResultsFilter",
-        # triggerConditions = cms.vstring( "L1Tech_BSC_minBias_threshold1" ),
-        triggerConditions = cms.vstring( "L1Tech_BSC_minBias_OR" ),
-        hltResults = cms.InputTag( "TriggerResults", "", "HLT" ),
-        l1tResults = cms.InputTag( "gtDigis" ),
-        l1tIgnoreMask = cms.bool( True ),
-        l1techIgnorePrescales = cms.bool( True ),
-        daqPartitions = cms.uint32( 1 ),
-        throw = cms.bool( True ))
-    process.p *= process.tfilter
+    # only for LP_MinBias samples!
+    process.load('HLTrigger.HLTfilters.hltHighLevel_cfi')
+    process.hltHighLevel.HLTPaths = cms.vstring("HLT_L1Tech53_MB_2_v*")
+    process.p *= process.hltHighLevel
+
+if reco:
+    process.load('CommonTools.RecoAlgos.HBHENoiseFilter_cfi')
+    process.load('RecoMET.METFilters.eeBadScFilter_cfi')
+    process.pvfilter = cms.EDFilter("GoodVertexFilter",
+            vertexCollection = cms.InputTag('offlinePrimaryVertices'),
+            minimumNDOF = cms.uint32(4),
+            maxAbsZ = cms.double(24),
+            maxd0 = cms.double(2))
+    process.p *= \
+            process.pvfilter * \
+            process.HBHENoiseFilter * \
+            process.eeBadScFilter
 
 if reco and pu == 'none' and onepv: 
     process.vfilter = cms.EDFilter("VertexCountFilter",
