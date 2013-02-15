@@ -213,6 +213,9 @@ if sim:
 
 process.jetPlotter.l1Jets = cms.untracked.string('l1extraParticles')
 
+if raw and reco:
+    process.recHitPlotter.useVertices = cms.untracked.bool(True)
+
 process.recHitPlotter00_5 = process.recHitPlotter.clone()
 process.recHitPlotter00_5.cut = cms.untracked.double(0.5)
 
