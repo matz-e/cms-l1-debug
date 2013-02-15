@@ -125,7 +125,7 @@ TrackPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    double n_vertices = 0;
 
    for (const auto& v: *(vertex_h.product())) {
-      if (v.ndof() < 5 || fabs(v.z()) > 50 || fabs(v.position().rho()) > 2.)
+      if (v.ndof() < 5 || fabs(v.z()) > 24. || fabs(v.position().rho()) > 2.)
          continue;
       n_vertices += 1.;
    }

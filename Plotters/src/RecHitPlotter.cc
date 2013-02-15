@@ -273,7 +273,7 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    }
    int nvtx = 0;
    for (const auto& v: *(vertices.product())) {
-      if (v.ndof() < 5 || fabs(v.z()) > 50 || fabs(v.position().rho()) > 2.)
+      if (v.ndof() < 5 || fabs(v.z()) > 24. || fabs(v.position().rho()) > 2.)
          continue;
       nvtx++;
    }
