@@ -182,12 +182,12 @@ if raw and reemul:
             * process.HLTL1UnpackerSequence \
             * process.l1GtUnpack 
 
+if do_reco:
+    process.q *= process.reconstruction
+
 if debug:
     process.dump = cms.EDAnalyzer("EventContentAnalyzer")
     process.p *= process.dump
-
-if do_reco:
-    process.q *= process.reconstruction
 
 process.load('SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff')
 
