@@ -5,6 +5,8 @@
 <use name="FWCore/ServiceRegistry"/>
 <use name="CalibFormats/CaloTPG"/>
 <use name="CommonTools/UtilAlgos"/>
+<use name="CondFormats/DataRecord"/>
+<use name="CondFormats/EcalObjects"/>
 <use name="DataFormats/CaloTowers"/>
 <use name="DataFormats/EcalDetId"/>
 <use name="DataFormats/EcalDigi"/>

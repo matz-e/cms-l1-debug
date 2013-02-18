@@ -26,13 +26,18 @@
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 
+#include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
+
+#include "CondFormats/DataRecord/interface/EcalChannelStatusRcd.h"
+#include "CondFormats/EcalObjects/interface/EcalChannelStatus.h"
 
 #include "DataFormats/Common/interface/SortedCollection.h"
 #include "DataFormats/EcalDetId/interface/EBDetId.h"
@@ -105,6 +110,12 @@ class RecHitPlotter : public edm::EDAnalyzer, BasePlotter {
       TH1D* hcal_en_per_vtx_b_[20];
       TH1D* hcal_en_per_vtx_e_[20];
       TH1D* hcal_en_per_vtx_f_[20];
+
+      TH1D* ecal_en_tot_per_vtx_b_[20];
+      TH1D* ecal_en_tot_per_vtx_e_[20];
+      TH1D* hcal_en_tot_per_vtx_b_[20];
+      TH1D* hcal_en_tot_per_vtx_e_[20];
+      TH1D* hcal_en_tot_per_vtx_f_[20];
 
       TProfile* ecal_et_tot_vtx_b_;
       TProfile* ecal_et_tot_vtx_e_;
@@ -247,6 +258,26 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
             TString::Format("hcal_en_per_vtx_f_%02d", i),
             TString::Format("HF E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
             en_bins, 0., en_max);
+      ecal_en_tot_per_vtx_b_[i] = fs->make<TH1D>(
+            TString::Format("ecal_en_tot_per_vtx_b_%02d", i),
+            TString::Format("EB #sum E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            en_tot_bins, 0., en_tot_max);
+      ecal_en_tot_per_vtx_e_[i] = fs->make<TH1D>(
+            TString::Format("ecal_en_tot_per_vtx_e_%02d", i),
+            TString::Format("EE #sum E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            en_tot_bins, 0., en_tot_max);
+      hcal_en_tot_per_vtx_b_[i] = fs->make<TH1D>(
+            TString::Format("hcal_en_tot_per_vtx_b_%02d", i),
+            TString::Format("HB #sum E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            en_tot_bins, 0., en_tot_max);
+      hcal_en_tot_per_vtx_e_[i] = fs->make<TH1D>(
+            TString::Format("hcal_en_tot_per_vtx_e_%02d", i),
+            TString::Format("HE #sum E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            en_tot_bins, 0., en_tot_max);
+      hcal_en_tot_per_vtx_f_[i] = fs->make<TH1D>(
+            TString::Format("hcal_en_tot_per_vtx_f_%02d", i),
+            TString::Format("HF #sum E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            en_tot_bins, 0., en_tot_max);
    }
 
    ecal_et_tot_vtx_b_ = fs->make<TProfile>("ecal_et_tot_vtx_b",
@@ -291,12 +322,23 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       edm::LogError("RecHitPlotter") <<
          "Can't find rec hit collection with tag '" << ecalHits_[0] << "'" << std::endl;
    } else {
+      edm::ESHandle<EcalChannelStatus> status;
+      setup.get<EcalChannelStatusRcd>().get(status);
+
       ecal_e_tot_b = 0.;
       ecal_hits_b = eb_hits->size();
 
       edm::SortedCollection<EcalRecHit>::const_iterator hit;
       for (hit = eb_hits->begin(); hit != eb_hits->end(); ++hit) {
          EBDetId id = static_cast<EBDetId>(hit->id());
+
+         if (hit->checkFlag(EcalRecHit::kWeird || hit->checkFlag(EcalRecHit::kDiWeird)))
+            continue;
+
+         auto channel_status = status.product()->find(id);
+         if (channel_status == status.product()->end() ||
+               (channel_status->getStatusCode() & 0x1F) != 0)
+            continue;
 
          if (hit->energy() < cut_)
             continue;
@@ -312,8 +354,10 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       }
       ecal_en_tot_b_->Fill(ecal_e_tot_b, weight);
       ecal_hits_b_->Fill(ecal_hits_b, weight);
-
       ecal_et_tot_vtx_b_->Fill(nvtx, ecal_e_tot_b, weight); 
+
+      if (0 <= nvtx_bin && nvtx_bin < 20)
+         ecal_en_tot_per_vtx_b_[nvtx_bin]->Fill(ecal_e_tot_b, weight);
    }
 
    edm::Handle< edm::SortedCollection<EcalRecHit> > ee_hits;
@@ -338,8 +382,10 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       }
       ecal_en_tot_e_->Fill(ecal_e_tot_e, weight);
       ecal_hits_e_->Fill(ecal_hits_e, weight);
-
       ecal_et_tot_vtx_e_->Fill(nvtx, ecal_e_tot_e, weight); 
+
+      if (0 <= nvtx_bin && nvtx_bin < 20)
+         ecal_en_tot_per_vtx_e_[nvtx_bin]->Fill(ecal_e_tot_e, weight);
    }
 
    ecal_en_tot_->Fill(ecal_e_tot_b + ecal_e_tot_e, weight);
@@ -415,6 +461,11 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 
       hcal_et_tot_vtx_b_->Fill(nvtx, hcal_e_tot_b, weight); 
       hcal_et_tot_vtx_e_->Fill(nvtx, hcal_e_tot_e1 + hcal_e_tot_e2, weight); 
+
+      if (0 <= nvtx_bin && nvtx_bin < 20) {
+         hcal_en_tot_per_vtx_b_[nvtx_bin]->Fill(hcal_e_tot_b, weight);
+         hcal_en_tot_per_vtx_e_[nvtx_bin]->Fill(hcal_e_tot_e1 + hcal_e_tot_e2, weight);
+      }
    }
 
    edm::Handle< edm::SortedCollection<HFRecHit> > hf_hits;
@@ -439,6 +490,9 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 
       hcal_en_tot_f_->Fill(hcal_e_tot_f, weight);
       hcal_hits_f_->Fill(hcal_hits_f, weight);
+
+      if (0 <= nvtx_bin && nvtx_bin < 20)
+         hcal_en_tot_per_vtx_f_[nvtx_bin]->Fill(hcal_e_tot_f, weight);
    }
 }
 
