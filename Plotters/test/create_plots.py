@@ -327,7 +327,8 @@ process.TFileService = cms.Service("TFileService",
 
 if ifile:
     process.source = cms.Source('PoolSource',
-            fileNames = cms.untracked.vstring([ifile]))
+            fileNames = cms.untracked.vstring(
+                map(str.strip, open(ifile).readlines())))
 elif data and pu == 'none' and reco:
     # {{{
     process.source = cms.Source('PoolSource',
@@ -580,7 +581,7 @@ elif mc and pu == 'low':
             fileNames = cms.untracked.vstring([
                 'file:SingleNuPt10_Mix.root'
                 ]))
-elif data and pu == '45':
+elif data and pu == '45' and raw:
     # {{{
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
@@ -609,7 +610,7 @@ elif data and pu == '45':
                 # '179828:179-179828:189', '179828:366-179828:366'
                 # ))
     # }}}
-elif data and pu == '66':
+elif data and pu == '66' and raw:
     # {{{
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
@@ -638,7 +639,7 @@ elif data and pu == '66':
                 # '179828:179-179828:189', '179828:366-179828:366'
                 # ))
     # }}}
-elif mc and pu == '45':
+elif mc and pu == '45' and raw:
     # {{{
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
@@ -664,7 +665,7 @@ elif mc and pu == '45':
                 '/store/mc/Summer12_DR53X/Neutrino_Pt_2to20_gun/GEN-RAW/PU45_noOOT_START53_V7B-v2/00000/0046FAB4-9E28-E211-8A5C-003048678F74.root'
                 ]))
     # }}}
-elif mc and pu == '66':
+elif mc and pu == '66' and raw:
     # {{{
     process.source = cms.Source('PoolSource',
             fileNames = cms.untracked.vstring([
