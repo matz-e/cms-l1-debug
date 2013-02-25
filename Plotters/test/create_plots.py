@@ -288,6 +288,27 @@ if reco or do_reco:
 if (raw and reco) or do_reco:
     process.p *= process.recHitTPPlotter
 
+class CreateTransverse:
+    def __init__(self):
+        self.transverse = []
+    def enter(self, m):
+        if 'rechitplotter' not in m.label().lower():
+            return
+        tr = m.clone()
+        tr_label = m.label()
+        tr_label = 'transverse' + tr_label[0].upper() + tr_label[1:]
+        tr.setLabel(tr_label)
+        tr.transverse = cms.untracked.bool(True)
+        self.transverse.append(tr)
+    def leave(self, m):
+        pass
+
+visitor = CreateTransverse()
+process.p.visit(visitor)
+for m in visitor.transverse:
+    process.__setattr__(m.label(), m)
+    process.p *= m
+
 if mc:
     process.p *= process.pileUpPlotter
 
