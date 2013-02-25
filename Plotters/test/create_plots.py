@@ -51,7 +51,8 @@ else:
 for arg in argv:
     (k, v) = map(str.strip, arg.split('=', 1))
     if k not in globals():
-        raise "Unknown argument '%s'!" % (k,)
+        sys.stderr.write("Unknown argument '%s'!\n" % (k,))
+        sys.exit(1)
     if type(globals()[k]) == bool:
         globals()[k] = v.lower() in ('y', 'yes', 'true', 't', '1')
     else:
