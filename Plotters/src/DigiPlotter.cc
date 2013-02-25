@@ -56,7 +56,7 @@ class DigiPlotter : public edm::EDAnalyzer, BasePlotter {
       virtual void analyze(const edm::Event&, const edm::EventSetup&);
 
       // ----------member data ---------------------------
-      edm::InputTag ecal_digis_;
+      std::vector<edm::InputTag> ecal_digis_;
       edm::InputTag hcal_digis_;
       edm::InputTag vertices_;
 
@@ -80,7 +80,7 @@ class DigiPlotter : public edm::EDAnalyzer, BasePlotter {
 DigiPlotter::DigiPlotter(const edm::ParameterSet& config) :
    edm::EDAnalyzer(),
    BasePlotter(config),
-   ecal_digis_(config.getParameter<edm::InputTag>("ecalDigis")),
+   ecal_digis_(config.getParameter< std::vector<edm::InputTag> >("ecalDigis")),
    hcal_digis_(config.getParameter<edm::InputTag>("hcalDigis")),
    vertices_(config.getParameter<edm::InputTag>("vertices")),
    use_vertices_(config.getUntrackedParameter<bool>("useVertices", false))
@@ -161,10 +161,10 @@ DigiPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    }
 
    Handle<EBDigiCollection> e_digis;
-   if (!event.getByLabel(ecal_digis_, e_digis)) {
+   if (!event.getByLabel(ecal_digis_[0], e_digis)) {
       LogError("DigiPlotter") <<
          "Can't find ecal digi collection with tag '" <<
-         ecal_digis_ << "'" << std::endl;
+         ecal_digis_[0] << "'" << std::endl;
    } else {
       for (EBDigiCollection::const_iterator digi = e_digis->begin();
             digi != e_digis->end(); ++digi) {
@@ -181,10 +181,10 @@ DigiPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    }
 
    Handle<EEDigiCollection> ee_digis;
-   if (!event.getByLabel(ecal_digis_, ee_digis)) {
+   if (!event.getByLabel(ecal_digis_[1], ee_digis)) {
       LogError("DigiPlotter") <<
          "Can't find ecal digi collection with tag '" <<
-         ecal_digis_ << "'" << std::endl;
+         ecal_digis_[1] << "'" << std::endl;
    } else {
       for (EEDigiCollection::const_iterator digi = e_digis->begin();
             digi != e_digis->end(); ++digi) {
