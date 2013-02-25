@@ -48,6 +48,12 @@
 #include "DataFormats/HcalRecHit/interface/HFRecHit.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/EcalAlgo/interface/EcalBarrelGeometry.h"
+#include "Geometry/EcalAlgo/interface/EcalEndcapGeometry.h"
+#include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
+#include "Geometry/Records/interface/CaloGeometryRecord.h"
+
 #include "Debug/Plotters/interface/BasePlotter.h"
 
 #include "TH1D.h"
@@ -123,6 +129,7 @@ class RecHitPlotter : public edm::EDAnalyzer, BasePlotter {
       TProfile* hcal_et_tot_vtx_e_;
 
       double cut_;
+      bool transverse_;
 
       edm::InputTag vertices_;
       std::vector<edm::InputTag> ecalHits_;
@@ -133,6 +140,7 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
    edm::EDAnalyzer(),
    BasePlotter(config),
    cut_(config.getUntrackedParameter<double>("cut", -.1)),
+   transverse_(config.getUntrackedParameter<bool>("transverse", false)),
    vertices_(config.getParameter<edm::InputTag>("vertices")),
    ecalHits_(config.getParameter< std::vector<edm::InputTag> >("ecalHits")),
    hcalHits_(config.getParameter< std::vector<edm::InputTag> >("hcalHits"))
@@ -322,6 +330,11 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       edm::LogError("RecHitPlotter") <<
          "Can't find rec hit collection with tag '" << ecalHits_[0] << "'" << std::endl;
    } else {
+      edm::ESHandle<CaloGeometry> gen_geo;
+      setup.get<CaloGeometryRecord>().get(gen_geo);
+      const CaloSubdetectorGeometry *geo = 
+         gen_geo->getSubdetectorGeometry(DetId::Ecal, EcalBarrel);
+
       edm::ESHandle<EcalChannelStatus> status;
       setup.get<EcalChannelStatusRcd>().get(status);
 
@@ -331,6 +344,7 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       edm::SortedCollection<EcalRecHit>::const_iterator hit;
       for (hit = eb_hits->begin(); hit != eb_hits->end(); ++hit) {
          EBDetId id = static_cast<EBDetId>(hit->id());
+         double en = hit->energy();
 
          if (hit->checkFlag(EcalRecHit::kWeird || hit->checkFlag(EcalRecHit::kDiWeird)))
             continue;
@@ -340,17 +354,20 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
                (channel_status->getStatusCode() & 0x1F) != 0)
             continue;
 
-         if (hit->energy() < cut_)
+         if (en < cut_)
             continue;
 
-         ecal_e_tot_b += hit->energy();
-         ecal_en_->Fill(hit->energy(), weight);
-         ecal_en_b_->Fill(hit->energy(), weight);
-         ecal_dist_en_->Fill(id.ieta(), id.iphi(), hit->energy() * weight);
+         if (transverse_)
+            en /= cosh(geo->getGeometry(id)->getPosition().eta());
+
+         ecal_e_tot_b += en;
+         ecal_en_->Fill(en, weight);
+         ecal_en_b_->Fill(en, weight);
+         ecal_dist_en_->Fill(id.ieta(), id.iphi(), en * weight);
          ecal_dist_mp_->Fill(id.ieta(), id.iphi(), weight);
 
          if (0 <= nvtx_bin && nvtx_bin < 20)
-            ecal_en_per_vtx_b_[nvtx_bin]->Fill(hit->energy(), weight);
+            ecal_en_per_vtx_b_[nvtx_bin]->Fill(en, weight);
       }
       ecal_en_tot_b_->Fill(ecal_e_tot_b, weight);
       ecal_hits_b_->Fill(ecal_hits_b, weight);
@@ -365,20 +382,42 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       edm::LogError("RecHitPlotter") <<
          "Can't find rec hit collection with tag '" << ecalHits_[1] << "'" << std::endl;
    } else {
+      edm::ESHandle<CaloGeometry> gen_geo;
+      setup.get<CaloGeometryRecord>().get(gen_geo);
+      const CaloSubdetectorGeometry *geo = 
+         gen_geo->getSubdetectorGeometry(DetId::Ecal, EcalEndcap);
+
+      edm::ESHandle<EcalChannelStatus> status;
+      setup.get<EcalChannelStatusRcd>().get(status);
+
       ecal_e_tot_e = 0.;
       ecal_hits_e = ee_hits->size();
 
       edm::SortedCollection<EcalRecHit>::const_iterator hit;
       for (hit = ee_hits->begin(); hit != ee_hits->end(); ++hit) {
-         if (hit->energy() < cut_)
+         EEDetId id = static_cast<EEDetId>(hit->id());
+         double en = hit->energy();
+
+         if (hit->checkFlag(EcalRecHit::kWeird || hit->checkFlag(EcalRecHit::kDiWeird)))
             continue;
 
-         ecal_e_tot_e += hit->energy();
-         ecal_en_->Fill(hit->energy(), weight);
-         ecal_en_e_->Fill(hit->energy(), weight);
+         auto channel_status = status.product()->find(id);
+         if (channel_status == status.product()->end() ||
+               (channel_status->getStatusCode() & 0x1F) != 0)
+            continue;
+
+         if (en < cut_)
+            continue;
+
+         if (transverse_)
+            en /= cosh(geo->getGeometry(id)->getPosition().eta());
+
+         ecal_e_tot_e += en;
+         ecal_en_->Fill(en, weight);
+         ecal_en_e_->Fill(en, weight);
 
          if (0 <= nvtx_bin && nvtx_bin < 20)
-            ecal_en_per_vtx_e_[nvtx_bin]->Fill(hit->energy(), weight);
+            ecal_en_per_vtx_e_[nvtx_bin]->Fill(en, weight);
       }
       ecal_en_tot_e_->Fill(ecal_e_tot_e, weight);
       ecal_hits_e_->Fill(ecal_hits_e, weight);
@@ -406,6 +445,13 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       edm::LogError("RecHitPlotter") <<
          "Can't find rec hit collection with tag '" << hcalHits_[0] << "'" << std::endl;
    } else {
+      edm::ESHandle<CaloGeometry> gen_geo;
+      setup.get<CaloGeometryRecord>().get(gen_geo);
+      const CaloSubdetectorGeometry *geo_barrel =
+         gen_geo->getSubdetectorGeometry(DetId::Hcal, HcalBarrel);
+      const CaloSubdetectorGeometry *geo_endcap =
+         gen_geo->getSubdetectorGeometry(DetId::Hcal, HcalEndcap);
+
       hcal_e_tot_b = 0.;
       hcal_e_tot_e1 = 0.;
       hcal_e_tot_e2 = 0.;
@@ -413,36 +459,44 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       edm::SortedCollection<HBHERecHit>::const_iterator hit;
       for (hit = hbhe_hits->begin(); hit != hbhe_hits->end(); ++hit) {
          HcalDetId id = static_cast<HcalDetId>(hit->id());
+         double en = hit->energy();
 
-         if (hit->energy() < cut_)
+         if (en < cut_)
             continue;
 
-         hcal_en_->Fill(hit->energy(), weight);
-         hcal_dist_en_->Fill(id.ieta(), id.iphi(), hit->energy() * weight);
+         if (transverse_) {
+            if (id.subdet() == HcalBarrel)
+               en /= cosh(geo_barrel->getGeometry(id)->getPosition().eta());
+            else
+               en /= cosh(geo_endcap->getGeometry(id)->getPosition().eta());
+         }
+
+         hcal_en_->Fill(en, weight);
+         hcal_dist_en_->Fill(id.ieta(), id.iphi(), en * weight);
          hcal_dist_mp_->Fill(id.ieta(), id.iphi(), weight);
 
          if (id.subdet() == HcalBarrel) {
             ++hcal_hits_b;
-            hcal_en_b_->Fill(hit->energy(), weight);
-            hcal_e_tot_b += hit->energy();
+            hcal_en_b_->Fill(en, weight);
+            hcal_e_tot_b += en;
 
             if (0 <= nvtx_bin && nvtx_bin < 20)
-               hcal_en_per_vtx_b_[nvtx_bin]->Fill(hit->energy(), weight);
+               hcal_en_per_vtx_b_[nvtx_bin]->Fill(en, weight);
          } else if (id.subdet() == HcalEndcap) {
-            hcal_en_e_->Fill(hit->energy(), weight);
+            hcal_en_e_->Fill(en, weight);
 
             if (0 <= nvtx_bin && nvtx_bin < 20)
-               hcal_en_per_vtx_e_[nvtx_bin]->Fill(hit->energy(), weight);
+               hcal_en_per_vtx_e_[nvtx_bin]->Fill(en, weight);
 
             // This checks the outer endcap
             if (id.ietaAbs() < 27) {
                ++hcal_hits_e1;
-               hcal_en_e1_->Fill(hit->energy(), weight);
-               hcal_e_tot_e1 += hit->energy();
+               hcal_en_e1_->Fill(en, weight);
+               hcal_e_tot_e1 += en;
             } else {
                ++hcal_hits_e2;
-               hcal_en_e2_->Fill(hit->energy(), weight);
-               hcal_e_tot_e2 += hit->energy();
+               hcal_en_e2_->Fill(en, weight);
+               hcal_e_tot_e2 += en;
             }
          }
       }
@@ -473,19 +527,30 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       edm::LogError("RecHitPlotter") <<
          "Can't find rec hit collection with tag '" << hcalHits_[1] << "'" << std::endl;
    } else {
+      edm::ESHandle<CaloGeometry> gen_geo;
+      setup.get<CaloGeometryRecord>().get(gen_geo);
+      const CaloSubdetectorGeometry *geo =
+         gen_geo->getSubdetectorGeometry(DetId::Hcal, HcalForward);
+
       hcal_e_tot_f = 0.;
 
       edm::SortedCollection<HFRecHit>::const_iterator hit;
       for (hit = hf_hits->begin(); hit != hf_hits->end(); ++hit) {
-         if (hit->energy() < cut_)
+         HcalDetId id = static_cast<HcalDetId>(hit->id());
+         double en = hit->energy();
+
+         if (en < cut_)
             continue;
 
+         if (transverse_)
+            en /= cosh(geo->getGeometry(id)->getPosition().eta());
+
          ++hcal_hits_f;
-         hcal_en_f_->Fill(hit->energy(), weight);
-         hcal_e_tot_f += hit->energy();
+         hcal_en_f_->Fill(en, weight);
+         hcal_e_tot_f += en;
 
          if (0 <= nvtx_bin && nvtx_bin < 20)
-            hcal_en_per_vtx_f_[nvtx_bin]->Fill(hit->energy(), weight);
+            hcal_en_per_vtx_f_[nvtx_bin]->Fill(en, weight);
       }
 
       hcal_en_tot_f_->Fill(hcal_e_tot_f, weight);
