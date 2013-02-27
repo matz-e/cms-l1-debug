@@ -256,43 +256,43 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
    for (int i = 0; i < 20; ++i) {
       ecal_en_per_vtx_b_[i] = fs->make<TH1D>(
             TString::Format("ecal_en_per_vtx_b_%02d", i),
-            TString::Format("EB E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            TString::Format("EB E with %d < nvtx < %d;E;Num", i * 5, i * 5 + 6),
             en_bins, 0., en_max);
       ecal_en_per_vtx_e_[i] = fs->make<TH1D>(
             TString::Format("ecal_en_per_vtx_e_%02d", i),
-            TString::Format("EE E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            TString::Format("EE E with %d < nvtx < %d;E;Num", i * 5, i * 5 + 6),
             en_bins, 0., en_max);
       hcal_en_per_vtx_b_[i] = fs->make<TH1D>(
             TString::Format("hcal_en_per_vtx_b_%02d", i),
-            TString::Format("HB E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            TString::Format("HB E with %d < nvtx < %d;E;Num", i * 5, i * 5 + 6),
             en_bins, 0., en_max);
       hcal_en_per_vtx_e_[i] = fs->make<TH1D>(
             TString::Format("hcal_en_per_vtx_e_%02d", i),
-            TString::Format("HE E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            TString::Format("HE E with %d < nvtx < %d;E;Num", i * 5, i * 5 + 6),
             en_bins, 0., en_max);
       hcal_en_per_vtx_f_[i] = fs->make<TH1D>(
             TString::Format("hcal_en_per_vtx_f_%02d", i),
-            TString::Format("HF E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            TString::Format("HF E with %d < nvtx < %d;E;Num", i * 5, i * 5 + 6),
             en_bins, 0., en_max);
       ecal_en_tot_per_vtx_b_[i] = fs->make<TH1D>(
             TString::Format("ecal_en_tot_per_vtx_b_%02d", i),
-            TString::Format("EB #sum E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            TString::Format("EB #sum E with %d < nvtx < %d;E;Num", i * 5, i * 5 + 6),
             en_tot_bins, 0., en_tot_max);
       ecal_en_tot_per_vtx_e_[i] = fs->make<TH1D>(
             TString::Format("ecal_en_tot_per_vtx_e_%02d", i),
-            TString::Format("EE #sum E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            TString::Format("EE #sum E with %d < nvtx < %d;E;Num", i * 5, i * 5 + 6),
             en_tot_bins, 0., en_tot_max);
       hcal_en_tot_per_vtx_b_[i] = fs->make<TH1D>(
             TString::Format("hcal_en_tot_per_vtx_b_%02d", i),
-            TString::Format("HB #sum E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            TString::Format("HB #sum E with %d < nvtx < %d;E;Num", i * 5, i * 5 + 6),
             en_tot_bins, 0., en_tot_max);
       hcal_en_tot_per_vtx_e_[i] = fs->make<TH1D>(
             TString::Format("hcal_en_tot_per_vtx_e_%02d", i),
-            TString::Format("HE #sum E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            TString::Format("HE #sum E with %d < nvtx < %d;E;Num", i * 5, i * 5 + 6),
             en_tot_bins, 0., en_tot_max);
       hcal_en_tot_per_vtx_f_[i] = fs->make<TH1D>(
             TString::Format("hcal_en_tot_per_vtx_f_%02d", i),
-            TString::Format("HF #sum E_{T} with %d < nvtx < %d;E_{T};Num", i * 5, i * 5 + 6),
+            TString::Format("HF #sum E with %d < nvtx < %d;E;Num", i * 5, i * 5 + 6),
             en_tot_bins, 0., en_tot_max);
    }
 
@@ -315,13 +315,13 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
    }
 
    ecal_et_tot_vtx_b_ = fs->make<TProfile>("ecal_et_tot_vtx_b",
-         "EB <#sum E_{T}> vs. #PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+         "EB <#sum E> vs. #PV;n_{vertices};#sum E", 101, -0.5, 100.5);
    ecal_et_tot_vtx_e_ = fs->make<TProfile>("ecal_et_tot_vtx_e",
-         "EE <#sum E_{T}> vs. #PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+         "EE <#sum E> vs. #PV;n_{vertices};#sum E", 101, -0.5, 100.5);
    hcal_et_tot_vtx_b_ = fs->make<TProfile>("hcal_et_tot_vtx_b",
-         "HB <#sum E_{T}> vs. #PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+         "HB <#sum E> vs. #PV;n_{vertices};#sum E", 101, -0.5, 100.5);
    hcal_et_tot_vtx_e_ = fs->make<TProfile>("hcal_et_tot_vtx_e",
-         "HE <#sum E_{T}> vs. #PV;n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+         "HE <#sum E> vs. #PV;n_{vertices};#sum E", 101, -0.5, 100.5);
 }
 
 RecHitPlotter::~RecHitPlotter() {}
