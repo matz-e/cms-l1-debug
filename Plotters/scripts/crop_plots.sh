@@ -7,11 +7,15 @@ fi
 
 set -e
 
-(
-   cd "$1"
-   for f in *.ps; do
-      ps2pdf "$f" tmp.pdf
-      pdfcrop tmp.pdf "${f%%s}df"
-      rm "$f" tmp.pdf
+find $* -name *.eps|while read file; do
+   while [ $(jobs|wc -l) -ge 30 ]; do
+      sleep .1
    done
-)
+   (
+      echo "converting $file..."
+      epstopdf "$file"
+   ) &
+done
+
+wait
+echo "finito!"
