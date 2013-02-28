@@ -128,6 +128,14 @@ class RecHitPlotter : public edm::EDAnalyzer, BasePlotter {
       TH1D* hcal_time_f_[10];
       static const double hcal_time_bounds_[11];
 
+      TH1D* hcal_time_vtx_low_b_[5];
+      TH1D* hcal_time_vtx_high_b_[5];
+      TH1D* hcal_time_vtx_low_e_[5];
+      TH1D* hcal_time_vtx_high_e_[5];
+      TH1D* hcal_time_vtx_low_f_[5];
+      TH1D* hcal_time_vtx_high_f_[5];
+      static const int hcal_time_vtx_bounds_[6];
+
       TProfile* ecal_et_tot_vtx_b_;
       TProfile* ecal_et_tot_vtx_e_;
       TProfile* hcal_et_tot_vtx_b_;
@@ -143,6 +151,8 @@ class RecHitPlotter : public edm::EDAnalyzer, BasePlotter {
 
 const double RecHitPlotter::hcal_time_bounds_[11] =
    {-1., .5, 1., 2., 5., 10., 25., 50., 100., 200., std::numeric_limits<double>::infinity()};
+const int RecHitPlotter::hcal_time_vtx_bounds_[6] = 
+   {-1, 10, 20, 30, 40, std::numeric_limits<int>::max()};
 
 RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
    edm::EDAnalyzer(),
@@ -311,6 +321,45 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
             TString::Format("hcal_time_f_%d", i),
             TString::Format("HF timing for RecHits w/ %.1f < E < %.1f GeV;time (ns);Num",
                hcal_time_bounds_[i], hcal_time_bounds_[i + 1]),
+            149, -149, 149);
+   }
+
+   for (int i = 0; i < 5; ++i) {
+      hcal_time_vtx_low_b_[i] = fs->make<TH1D>(
+            TString::Format("hcal_time_vtx_low_b_%d", i),
+            TString::Format("HB timing for RecHits w/ E < .5 GeV, "
+               "%d < PV < %d;time (ns);Num",
+               hcal_time_vtx_bounds_[i], hcal_time_vtx_bounds_[i + 1]),
+            149, -149, 149);
+      hcal_time_vtx_high_b_[i] = fs->make<TH1D>(
+            TString::Format("hcal_time_vtx_high_b_%d", i),
+            TString::Format("HB timing for RecHits w/ 2 < E < 5 GeV, "
+               "%d < PV < %d;time (ns);Num",
+               hcal_time_vtx_bounds_[i], hcal_time_vtx_bounds_[i + 1]),
+            149, -149, 149);
+      hcal_time_vtx_low_e_[i] = fs->make<TH1D>(
+            TString::Format("hcal_time_vtx_low_e_%d", i),
+            TString::Format("HE timing for RecHits w/ E < .5 GeV, "
+               "%d < PV < %d;time (ns);Num",
+               hcal_time_vtx_bounds_[i], hcal_time_vtx_bounds_[i + 1]),
+            149, -149, 149);
+      hcal_time_vtx_high_e_[i] = fs->make<TH1D>(
+            TString::Format("hcal_time_vtx_high_e_%d", i),
+            TString::Format("HE timing for RecHits w/ 2 < E < 5 GeV, "
+               "%d < PV < %d;time (ns);Num",
+               hcal_time_vtx_bounds_[i], hcal_time_vtx_bounds_[i + 1]),
+            149, -149, 149);
+      hcal_time_vtx_low_f_[i] = fs->make<TH1D>(
+            TString::Format("hcal_time_vtx_low_f_%d", i),
+            TString::Format("HF timing for RecHits w/ E < .5 GeV, "
+               "%d < PV < %d;time (ns);Num",
+               hcal_time_vtx_bounds_[i], hcal_time_vtx_bounds_[i + 1]),
+            149, -149, 149);
+      hcal_time_vtx_high_f_[i] = fs->make<TH1D>(
+            TString::Format("hcal_time_vtx_high_f_%d", i),
+            TString::Format("HF timing for RecHits w/ 2 < E < 5 GeV, "
+               "%d < PV < %d;time (ns);Num",
+               hcal_time_vtx_bounds_[i], hcal_time_vtx_bounds_[i + 1]),
             149, -149, 149);
    }
 
@@ -512,6 +561,16 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
             for (int i = 0; i < 10; ++i)
                if (hcal_time_bounds_[i] <= en and en < hcal_time_bounds_[i + 1])
                   hcal_time_b_[i]->Fill(hit->time(), weight);
+
+            for (int i = 0; i < 5; ++i) {
+               if (hcal_time_vtx_bounds_[i] <= nvtx and
+                     nvtx < hcal_time_vtx_bounds_[i + 1]) {
+                  if (en < .5)
+                     hcal_time_vtx_low_b_[i]->Fill(hit->time(), weight);
+                  else if (2. <= en and en < 5.)
+                     hcal_time_vtx_high_b_[i]->Fill(hit->time(), weight);
+               }
+            }
          } else if (id.subdet() == HcalEndcap) {
             hcal_en_e_->Fill(en, weight);
 
@@ -521,6 +580,16 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
             for (int i = 0; i < 10; ++i)
                if (hcal_time_bounds_[i] <= en and en < hcal_time_bounds_[i + 1])
                   hcal_time_e_[i]->Fill(hit->time(), weight);
+
+            for (int i = 0; i < 5; ++i) {
+               if (hcal_time_vtx_bounds_[i] <= nvtx and
+                     nvtx < hcal_time_vtx_bounds_[i + 1]) {
+                  if (en < .5)
+                     hcal_time_vtx_low_e_[i]->Fill(hit->time(), weight);
+                  else if (2. <= en and en < 5.)
+                     hcal_time_vtx_high_e_[i]->Fill(hit->time(), weight);
+               }
+            }
 
             // This checks the outer endcap
             if (id.ietaAbs() < 27) {
@@ -589,6 +658,16 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          for (int i = 0; i < 10; ++i)
             if (hcal_time_bounds_[i] <= en and en < hcal_time_bounds_[i + 1])
                hcal_time_f_[i]->Fill(hit->time(), weight);
+
+            for (int i = 0; i < 5; ++i) {
+               if (hcal_time_vtx_bounds_[i] <= nvtx and
+                     nvtx < hcal_time_vtx_bounds_[i + 1]) {
+                  if (en < .5)
+                     hcal_time_vtx_low_f_[i]->Fill(hit->time(), weight);
+                  else if (2. <= en and en < 5.)
+                     hcal_time_vtx_high_f_[i]->Fill(hit->time(), weight);
+               }
+            }
       }
 
       hcal_en_tot_f_->Fill(hcal_e_tot_f, weight);
