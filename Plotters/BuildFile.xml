@@ -7,6 +7,7 @@
 <use name="CommonTools/UtilAlgos"/>
 <use name="CondFormats/DataRecord"/>
 <use name="CondFormats/EcalObjects"/>
+<use name="CondFormats/HcalObjects"/>
 <use name="DataFormats/CaloTowers"/>
 <use name="DataFormats/EcalDetId"/>
 <use name="DataFormats/EcalDigi"/>
@@ -25,6 +26,7 @@
 <use name="Geometry/HcalTowerAlgo"/>
 <use name="Geometry/Records"/>
 <use name="PhysicsTools/Utilities"/>
-<use name="SimDataFormats/PileupSummaryInfo"/>
+<use name="PhysicsTools/Utilities"/>
+<use name="RecoLocalCalo/HcalRecAlgos"/>
 <use name="boost"/>
 <flags EDM_PLUGIN="1"/>

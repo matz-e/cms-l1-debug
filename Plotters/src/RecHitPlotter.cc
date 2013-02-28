@@ -37,7 +37,9 @@
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
 #include "CondFormats/DataRecord/interface/EcalChannelStatusRcd.h"
+#include "CondFormats/DataRecord/interface/HcalChannelQualityRcd.h"
 #include "CondFormats/EcalObjects/interface/EcalChannelStatus.h"
+#include "CondFormats/HcalObjects/interface/HcalChannelQuality.h"
 
 #include "DataFormats/Common/interface/SortedCollection.h"
 #include "DataFormats/EcalDetId/interface/EBDetId.h"
@@ -53,6 +55,9 @@
 #include "Geometry/EcalAlgo/interface/EcalEndcapGeometry.h"
 #include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
+
+#include "RecoLocalCalo/HcalRecAlgos/interface/HcalSeverityLevelComputer.h"
+#include "RecoLocalCalo/HcalRecAlgos/interface/HcalSeverityLevelComputerRcd.h"
 
 #include "Debug/Plotters/interface/BasePlotter.h"
 
@@ -527,6 +532,14 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       const CaloSubdetectorGeometry *geo_endcap =
          gen_geo->getSubdetectorGeometry(DetId::Hcal, HcalEndcap);
 
+      edm::ESHandle<HcalChannelQuality> h_status;
+      setup.get<HcalChannelQualityRcd>().get(h_status);
+      const HcalChannelQuality *status = h_status.product();
+
+      edm::ESHandle<HcalSeverityLevelComputer> h_comp;
+      setup.get<HcalSeverityLevelComputerRcd>().get(h_comp);
+      const HcalSeverityLevelComputer *comp = h_comp.product();
+
       hcal_e_tot_b = 0.;
       hcal_e_tot_e1 = 0.;
       hcal_e_tot_e2 = 0.;
@@ -535,6 +548,11 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       for (hit = hbhe_hits->begin(); hit != hbhe_hits->end(); ++hit) {
          HcalDetId id = static_cast<HcalDetId>(hit->id());
          double en = hit->energy();
+
+         if (comp->getSeverityLevel(id,
+                  hit->flags(),
+                  status->getValues(id)->getValue()) > 10)
+            continue;
 
          if (en < cut_)
             continue;
@@ -635,12 +653,25 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       const CaloSubdetectorGeometry *geo =
          gen_geo->getSubdetectorGeometry(DetId::Hcal, HcalForward);
 
+      edm::ESHandle<HcalChannelQuality> h_status;
+      setup.get<HcalChannelQualityRcd>().get(h_status);
+      const HcalChannelQuality *status = h_status.product();
+
+      edm::ESHandle<HcalSeverityLevelComputer> h_comp;
+      setup.get<HcalSeverityLevelComputerRcd>().get(h_comp);
+      const HcalSeverityLevelComputer *comp = h_comp.product();
+
       hcal_e_tot_f = 0.;
 
       edm::SortedCollection<HFRecHit>::const_iterator hit;
       for (hit = hf_hits->begin(); hit != hf_hits->end(); ++hit) {
          HcalDetId id = static_cast<HcalDetId>(hit->id());
          double en = hit->energy();
+
+         if (comp->getSeverityLevel(id,
+                  hit->flags(),
+                  status->getValues(id)->getValue()) > 10)
+            continue;
 
          if (en < cut_)
             continue;
