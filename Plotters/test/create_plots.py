@@ -33,6 +33,8 @@ sim = False
 onepv = False
 minbias = False
 zerobias = False
+trainback = False
+trainfront = False
 
 ifile = 'please set me'
 ofile = 'please set me'
@@ -111,6 +113,30 @@ if do_reco:
 
 process.p = cms.Path() # for plots
 process.q = cms.Path() # for reemulation
+
+if data and trainback:
+    process.level1Pattern = cms.EDFilter('HLTLevel1Pattern',
+            L1GtReadoutRecordTag = cms.InputTag('gtDigis'),
+            triggerBit = cms.string('L1Tech_BPTX_plus_AND_minus.v0'),
+            daqPartitions = cms.uint32(1),
+            ignoreL1Mask = cms.bool(True),
+            invert = cms.bool(False),
+            throw = cms.bool(True),
+            bunchCrossings = cms.vint32( -2, -1,  0,  1,  2 ),
+            triggerPattern = cms.vint32(  1,  0,  1,  0,  0 ))
+    process.p *= process.level1Pattern
+
+if data and trainfront:
+    process.level1Pattern = cms.EDFilter('HLTLevel1Pattern',
+            L1GtReadoutRecordTag = cms.InputTag('gtDigis'),
+            triggerBit = cms.string('L1Tech_BPTX_plus_AND_minus.v0'),
+            daqPartitions = cms.uint32(1),
+            ignoreL1Mask = cms.bool(True),
+            invert = cms.bool(False),
+            throw = cms.bool(True),
+            bunchCrossings = cms.vint32( -2, -1,  0,  1,  2 ),
+            triggerPattern = cms.vint32(  0,  0,  1,  0,  1 ))
+    process.p *= process.level1Pattern
 
 if zerobias:
     process.load('HLTrigger.HLTfilters.hltHighLevel_cfi')

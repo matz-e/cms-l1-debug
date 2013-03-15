@@ -358,7 +358,11 @@ modifiers = {
 pileup = {
     '66': 'PU66',
     '45': 'PU45',
-    '2012C': '2012C'
+    '2012C': '2012C',
+    '2012Cext': '2012C 200ns',
+    '2012Cext2': '2012C 300ns',
+    'front': '2012C front',
+    'back': '2012C back'
 }
 
 data_colors = [1, 11, 14, 12]
