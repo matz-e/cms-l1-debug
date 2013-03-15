@@ -14,6 +14,7 @@ find $* -name *.eps|while read file; do
    (
       echo "converting $file..."
       epstopdf "$file"
+      rm "$file"
    ) &
 done
 
