@@ -13,7 +13,7 @@ transverserechitplotter02_0
 EOF
 )
 
-pus="2012C 45 66"
+[ -z "$pus" ] && pus="2012C 45 66 front back"
 
 for d in $dirs; do
    while [ $(jobs|wc -l) -ge 10 ]; do
@@ -21,10 +21,10 @@ for d in $dirs; do
    done
 
    save_plots.py plot_only="pileupplotter|trackplotter|$d\$" "cmp/{d}/recoAll_{p}.eps" \
-      plots_{data,mc}_raw+reco-{2012C,45,66}.root &
+      plots_{data,mc}_raw+reco-{2012C,45,66}*.root &
    for p in $pus; do
       save_plots.py plot_only="pileupplotter|trackplotter|$d\$" "cmp/{d}/reco${p}_{p}.eps" \
-         plots_{data,mc}_raw+reco-${p}.root &
+         plots_{data,mc}_raw+reco-${p}*.root &
    done
 done
 
