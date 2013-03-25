@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+reweighed = True
+unweighed = True
 plot_only = ""
 
 # Argument parsing
@@ -24,6 +26,10 @@ for arg in sys.argv[1:]:
         globals()[k] = type(globals()[k])(v)
 
 sys.argv = [sys.argv[0]] + new_args
+
+NOPLOT = 0b00
+LOGPLOT = 0b01
+REGPLOT = 0b10
 
 import math
 import os
@@ -398,7 +404,7 @@ def legend(path, hist):
             hist.SetMarkerColor(mc_colors[mc_files.index(f)])
             if 'reemul' in basedir:
                 hist.SetMarkerStyle(r.kOpenDiamond)
-            elif 'reweighted' in basedir:
+            elif 'reweighted' in basedir and reweighed and unweighed:
                 hist.SetMarkerStyle(r.kOpenCross)
             else:
                 hist.SetMarkerStyle(r.kOpenSquare)
@@ -439,8 +445,9 @@ def legend(path, hist):
 
     if 'reweighted' in basedir:
         basedir = basedir.replace('reweighted', '')
-        hist.SetLineStyle(r.kDashed)
         label += ' rw.'
+        if reweighed and unweighed:
+            hist.SetLineStyle(r.kDashed)
 
     n = counts[f][0]
     # Hack to get the right normalization for pileup histograms
@@ -476,6 +483,22 @@ def get_num_events(fn):
     if c != 0:
         return (c, c_rw)
 
+def which_plots(filename):
+    """Returns whether regular and logplots should be done.
+
+    >>> which_plots('digiplotter', 'hcal_digi')
+    LOGPLOT
+    """
+    if 'digi' in filename or 'rechit' in filename:
+        if 'dist' in filename or 'tot' in filename:
+            return REGPLOT
+        elif 'time' in filename:
+            return LOGPLOT
+        elif 'all' in filename.lower() or re.search(r'\d\d_\d', filename):
+            return NOPLOT
+        return LOGPLOT
+    return LOGPLOT|REGPLOT
+
 def summarize(pdffile, files):
     handles = [r.TFile(fn) for fn in files]
 
@@ -494,6 +517,17 @@ def summarize(pdffile, files):
 
             for k in dir.GetListOfKeys():
                 key = k.GetName()
+
+                mode = which_plots(pdffile.format(d=path.lower().split(':', 1)[1], p=key))
+                if mode == NOPLOT:
+                    continue
+                if 'reweighted' in path.lower():
+                    if not reweighed:
+                        continue
+                else:
+                    if not unweighed and '_mc_' in path.lower():
+                        continue
+
                 obj = k.ReadObj()
                 leg, norm, basedir, obj = legend(path, obj)
 
@@ -543,6 +577,10 @@ def summarize(pdffile, files):
                     plot_dict[k].append((obj, leg, norm))
 
     for (basedir, key), objs in plots.items():
+        mode = which_plots(pdffile.format(d=basedir, p=key))
+        if mode == NOPLOT:
+            continue
+
         ps, ls, ns = zip(*objs) # unzip
         if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F, r.TProfile]:
             continue
@@ -553,9 +591,12 @@ def summarize(pdffile, files):
                     normalized=norm)
         else:
             s = create_stack(ps, ls, ns, normalized=norm)
-        plot_stacks([s], pdffile.format(p=key, d=basedir))
-        s.set_logplot(True)
-        plot_stacks([s], pdffile.format(p=key + '_log', d=basedir))
+
+        if mode & REGPLOT:
+            plot_stacks([s], pdffile.format(p=key, d=basedir))
+        if mode & LOGPLOT:
+            s.set_logplot(True)
+            plot_stacks([s], pdffile.format(p=key + '_log', d=basedir))
 
     for plot_dict in (plots_digi, plots_tp):
         for ((basedir, key), subdict) in plot_dict.items():
@@ -565,14 +606,20 @@ def summarize(pdffile, files):
                     # limits = greater(limits, get_limits(tpl[0]))
             # print key, limits
             for subkey, objs in subdict.items():
+                mode = which_plots(pdffile.format(d=basedir, p=real_key))
+                if mode == NOPLOT:
+                    continue
+
                 real_key = '_'.join([key, subkey])
                 ps, ls, ns = zip(*objs) # unzip
                 if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F]:
                     continue
                 s = create_stack(ps, ls, ns)
-                plot_stacks([s], pdffile.format(p=real_key, d=basedir))
-                s.set_logplot(True)
-                plot_stacks([s], pdffile.format(p=real_key + '_log', d=basedir))
+                if mode & REGPLOT:
+                    plot_stacks([s], pdffile.format(p=real_key, d=basedir))
+                if mode & LOGPLOT:
+                    s.set_logplot(True)
+                    plot_stacks([s], pdffile.format(p=real_key + '_log', d=basedir))
 
     for ((basedir, key), subdict) in plots_2d.items():
         class FixedProj:
@@ -600,6 +647,10 @@ def summarize(pdffile, files):
         for (axis, proj) in projs.items():
             # subkey one of (mp, et, adc, ...)
             for subkey, objs in subdict.items():
+                mode = which_plots(pdffile.format(d=basedir, p=key + '_' + subkey))
+                if mode == NOPLOT:
+                    continue
+
                 norm_by_event = '_' not in subkey
                 real_key = '_'.join([key, subkey, axis])
 
@@ -632,11 +683,11 @@ def summarize(pdffile, files):
                 if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F]:
                     continue
                 s = create_stack(ps, ls, ns, adjustlimits=False, normalized=norm_by_event)
-                plot_stacks([s], pdffile.format(p=real_key, d=basedir))
-                s.set_logplot(True)
-                plot_stacks([s], pdffile.format(p=real_key + '_log', d=basedir))
-        
-        # print subdict.keys()
+                if mode & REGPLOT:
+                    plot_stacks([s], pdffile.format(p=real_key, d=basedir))
+                if mode & LOGPLOT:
+                    s.set_logplot(True)
+                    plot_stacks([s], pdffile.format(p=real_key + '_log', d=basedir))
 
 if len(new_args) < 2:
     sys.stderr.write(
