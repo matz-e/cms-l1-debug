@@ -69,7 +69,7 @@ class Plots:
         if legend:
             self.__legend = legend
         else:
-            self.__legend = r.TLegend(.2, .825, .8, .925)
+            self.__legend = r.TLegend(.12, .9, .88, 1.)
         self.__limits = limits
         self.__logplot = logplot
         self.__plots = []
@@ -98,7 +98,7 @@ class Plots:
         style = "l"
         if isinstance(plot, r.TProfile) or "p" in plot.GetOption().lower():
             style = "p"
-        self.__legend.AddEntry(plot, legend_title, style) 
+        self.__legend.AddEntry(plot, legend_title, style)
 
         xmax = self.find_limit(plot)
         xmin = self.find_limit(plot, False)
@@ -162,13 +162,15 @@ class Plots:
         # find optimal legend column count: between 4 and 2, optimally
         # higher and all rows as full as possible
         mods = {}
-        for i in range(4, 1, -1):
+        for i in range(3, 1, -1):
             m = len(self.__plots) % i
+            if m != 0:
+                m = 3 - m # number of empty legend slots
             if m not in mods:
                 mods[m] = i
         self.__legend.SetNColumns(mods[min(mods.keys())])
-        height = math.ceil(len(self.__plots) / mods[min(mods.keys())])
-        self.__legend.SetY1(self.__legend.GetY2() - .05 * height)
+        height = math.ceil(len(self.__plots) / float(mods[min(mods.keys())]))
+        self.__legend.SetY1(self.__legend.GetY2() - .75 * height)
 
         pad.Divide(1,2)
         pad.GetPad(1).SetPad(0., .333, 1., 1.)
@@ -229,7 +231,7 @@ class Plots:
                 xaxis_up = plt.GetXaxis()
                 yaxis_up = plt.GetYaxis()
                 yaxis_up.SetTickLength(.02)
-                yaxis_up.SetRangeUser(ymin * .5, ymax * 1.2)
+                yaxis_up.SetRangeUser(ymin * .5, ymax * 1.3)
 
                 if self.__limits:
                     xaxis_up.SetRangeUser(*self.__limits)
