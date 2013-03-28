@@ -434,11 +434,11 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
                (channel_status->getStatusCode() & 0x1F) != 0)
             continue;
 
-         if (en < cut_)
-            continue;
-
          if (transverse_)
             en /= cosh(geo->getGeometry(id)->getPosition().eta());
+
+         if (en < cut_)
+            continue;
 
          ecal_e_tot_b += en;
          ecal_en_->Fill(en, weight);
@@ -486,11 +486,11 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
                (channel_status->getStatusCode() & 0x1F) != 0)
             continue;
 
-         if (en < cut_)
-            continue;
-
          if (transverse_)
             en /= cosh(geo->getGeometry(id)->getPosition().eta());
+
+         if (en < cut_)
+            continue;
 
          ecal_e_tot_e += en;
          ecal_en_->Fill(en, weight);
@@ -554,15 +554,15 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
                   status->getValues(id)->getValue()) > 10)
             continue;
 
-         if (en < cut_)
-            continue;
-
          if (transverse_) {
             if (id.subdet() == HcalBarrel)
                en /= cosh(geo_barrel->getGeometry(id)->getPosition().eta());
             else
                en /= cosh(geo_endcap->getGeometry(id)->getPosition().eta());
          }
+
+         if (en < cut_)
+            continue;
 
          hcal_en_->Fill(en, weight);
          hcal_dist_en_->Fill(id.ieta(), id.iphi(), en * weight);
@@ -673,11 +673,11 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
                   status->getValues(id)->getValue()) > 10)
             continue;
 
-         if (en < cut_)
-            continue;
-
          if (transverse_)
             en /= cosh(geo->getGeometry(id)->getPosition().eta());
+
+         if (en < cut_)
+            continue;
 
          ++hcal_hits_f;
          hcal_en_f_->Fill(en, weight);
