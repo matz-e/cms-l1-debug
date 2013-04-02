@@ -1,6 +1,7 @@
 #!/bin/sh
 
 [ -z "$dirs" ] && dirs=$(cat <<EOF
+caloregionplotter
 digiplotter
 rechitplotter
 rechitplotter00_5
@@ -13,7 +14,7 @@ transverserechitplotter02_0
 EOF
 )
 
-[ -z "$pus" ] && pus="2012C 45 66 front back"
+[ -z "$pus" ] && pus="2012C 45 front back"
 
 for d in $dirs; do
    while [ $(jobs|wc -l) -ge 10 ]; do
@@ -21,7 +22,7 @@ for d in $dirs; do
    done
 
    save_plots.py unweighed=n plot_only="pileupplotter|trackplotter|$d\$" "cmp/{d}/recoAll_{p}.eps" \
-      plots_{data,mc}_raw+reco-{2012C,45,66}.root &
+      plots_{data,mc}_raw+reco-{2012C,45}.root &
    save_plots.py unweighed=n plot_only="pileupplotter|trackplotter|$d\$" "cmp/{d}/recoAll2012C_{p}.eps" \
       plots_{data,mc}_raw+reco-2012C*.root &
    save_plots.py unweighed=n plot_only="pileupplotter|trackplotter|$d\$" "cmp/{d}/recoAllDir_{p}.eps" \
