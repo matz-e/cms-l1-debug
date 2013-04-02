@@ -44,6 +44,12 @@ r.gStyle.SetTitleBorderSize(0)
 r.gStyle.SetOptStat(0)
 # r.gStyle.SetTitleAlign(22)
 
+def rebin(fn):
+    """Determine if a plot saved with filename `fn` should be rebinned."""
+    if re.search(r'_en_tot_vtx_[be]', fn):
+        return False
+    return True
+
 class CustomLimits:
     def __init__(self, map):
         self.__dict = map
@@ -158,7 +164,7 @@ class Plots:
             pmin = cmp(contents)
         return omin
 
-    def draw(self, pad=r.gPad):
+    def draw(self, pad=r.gPad, rebin=True):
         # find optimal legend column count: between 4 and 2, optimally
         # higher and all rows as full as possible
         mods = {}
@@ -186,23 +192,26 @@ class Plots:
             r.gPad.SetLogy(True)
 
         # first rebin, then determine limits
-        drawn_plots = []
-        first = True
-        for plt in self.__plots:
-            if first:
-                if self.__limits:
-                    xaxis = plt.GetXaxis()
-                    ratio = xaxis.GetNbins() * \
-                            float.__rsub__(*map(float, self.__limits)) / \
-                            (xaxis.GetXmax() - xaxis.GetXmin()) / \
-                            80.
+        if rebin:
+            drawn_plots = []
+            first = True
+            for plt in self.__plots:
+                if first:
+                    if self.__limits:
+                        xaxis = plt.GetXaxis()
+                        ratio = xaxis.GetNbins() * \
+                                float.__rsub__(*map(float, self.__limits)) / \
+                                (xaxis.GetXmax() - xaxis.GetXmin()) / \
+                                80.
+                    else:
+                        ratio = xaxis_up.GetNbins() / 80.
+                    ratio = max(1, int(ratio))
+                    drawn_plots.append(plt.Rebin(ratio))
+                    first = False
                 else:
-                    ratio = xaxis_up.GetNbins() / 80.
-                ratio = max(1, int(ratio))
-                drawn_plots.append(plt.Rebin(ratio))
-                first = False
-            else:
-                drawn_plots.append(plt.Rebin(ratio))
+                    drawn_plots.append(plt.Rebin(ratio))
+        else:
+            drawn_plots = self.__plots
 
         # now determine y-axis plotting range
         ymax, ymin = 0., float("inf")
@@ -353,7 +362,7 @@ def plot_stacks(stacks, filename, width=None):
 
     for (n, s) in enumerate(stacks, 1):
         c.cd(n)
-        s.draw(c.GetPad(n))
+        s.draw(c.GetPad(n), rebin=rebin(filename))
     c.SaveAs(filename)
 
 last_color = 0
