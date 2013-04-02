@@ -382,9 +382,10 @@ pileup = {
     'back': '2012C back'
 }
 
-data_colors = [1, 11, 14, 12]
+data_colors = [1, 11, 12, 13, 14, 15, 16]
 data_files = []
-mc_colors = [2, 8, 9, 6, 7]
+data_markers = [r.kFullDotLarge, r.kFullSquare, r.kFullTriangleUp, r.kFullTriangleDown]
+mc_colors = [2, 8, 9, 6, 7, 41, 46, 38]
 mc_files = []
 
 def legend(path, hist):
@@ -430,12 +431,11 @@ def legend(path, hist):
                 data_files.append(f)
             hist.SetLineColor(data_colors[data_files.index(f)])
             hist.SetMarkerColor(data_colors[data_files.index(f)])
-            if 'reemul' in basedir:
-                hist.SetMarkerStyle(r.kFullTriangleUp)
-            elif 'reweighted' in basedir:
-                hist.SetMarkerStyle(r.kFullSquare)
-            else:
-                hist.SetMarkerStyle(r.kFullDotLarge)
+            hist.SetMarkerStyle(data_markers[data_files.index(f)])
+            # if 'reemul' in basedir:
+                # hist.SetMarkerStyle(r.kFullTriangleUp)
+            # else:
+                # hist.SetMarkerStyle(r.kFullDotLarge)
             hist.SetMarkerSize(.5)
         else:
             raise
