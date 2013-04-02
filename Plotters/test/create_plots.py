@@ -243,6 +243,12 @@ process.jetPlotter.l1Jets = cms.untracked.string('l1extraParticles')
 if raw and reco:
     process.digiPlotter.useVertices = cms.untracked.bool(True)
 
+process.recHitPlotter00_1 = process.recHitPlotter.clone()
+process.recHitPlotter00_1.cut = cms.untracked.double(0.1)
+
+process.recHitPlotter00_2 = process.recHitPlotter.clone()
+process.recHitPlotter00_2.cut = cms.untracked.double(0.2)
+
 process.recHitPlotter00_5 = process.recHitPlotter.clone()
 process.recHitPlotter00_5.cut = cms.untracked.double(0.5)
 
@@ -263,6 +269,8 @@ process.recHitPlotter20_0.cut = cms.untracked.double(20.0)
 
 if data:
     process.recHitPlotter.timeShift = cms.untracked.double(-5.)
+    process.recHitPlotter00_1.timeShift = cms.untracked.double(-5.)
+    process.recHitPlotter00_2.timeShift = cms.untracked.double(-5.)
     process.recHitPlotter00_5.timeShift = cms.untracked.double(-5.)
     process.recHitPlotter01_0.timeShift = cms.untracked.double(-5.)
     process.recHitPlotter02_0.timeShift = cms.untracked.double(-5.)
@@ -314,6 +322,8 @@ if reco or do_reco:
             process.caloTowerPlotter * \
             process.trackPlotter * \
             process.recHitPlotter * \
+            process.recHitPlotter00_1 * \
+            process.recHitPlotter00_2 * \
             process.recHitPlotter00_5 * \
             process.recHitPlotter01_0 * \
             process.recHitPlotter02_0 * \
