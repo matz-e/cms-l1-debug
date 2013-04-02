@@ -397,11 +397,11 @@ def legend(path, hist):
     basedir = dir.lower().strip('/')
 
     # XXX ugly hack to correct rechit labelling
-    if 'transverse' not in basedir and 'rechit' in basedir:
+    if 'transverse' in basedir and 'rechit' in basedir:
         hist.GetYaxis().SetTitle(
-                hist.GetYaxis().GetTitle().replace("E_{T}", "E"))
+                hist.GetYaxis().GetTitle().replace("E", "E_{T}"))
         hist.GetXaxis().SetTitle(
-                hist.GetXaxis().GetTitle().replace("E_{T}", "E"))
+                hist.GetXaxis().GetTitle().replace("E", "E_{T}"))
 
     m = re.search(r'plots_([a-zA-Z0-9]+)(?:_([^_]+))?_(?:([a-zA-Z0-9+]+)-)(\w+).root$', f)
     if m:
