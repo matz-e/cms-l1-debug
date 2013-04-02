@@ -128,6 +128,14 @@ class RecHitPlotter : public edm::EDAnalyzer, BasePlotter {
       TH1D* hcal_en_tot_per_vtx_e_[20];
       TH1D* hcal_en_tot_per_vtx_f_[20];
 
+      TH1D* hcal_en_e_early_;
+      TH1D* hcal_en_e_central_;
+      TH1D* hcal_en_e_late_;
+
+      TH1D* hcal_en_tot_e_early_;
+      TH1D* hcal_en_tot_e_central_;
+      TH1D* hcal_en_tot_e_late_;
+
       TH1D* hcal_time_b_[10];
       TH1D* hcal_time_e_[10];
       TH1D* hcal_time_f_[10];
@@ -147,6 +155,7 @@ class RecHitPlotter : public edm::EDAnalyzer, BasePlotter {
       TProfile* hcal_en_tot_vtx_e_;
 
       double cut_;
+      double shift_;
       bool transverse_;
 
       edm::InputTag vertices_;
@@ -163,6 +172,7 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
    edm::EDAnalyzer(),
    BasePlotter(config),
    cut_(config.getUntrackedParameter<double>("cut", -.1)),
+   shift_(config.getUntrackedParameter<double>("timeShift", 0)),
    transverse_(config.getUntrackedParameter<bool>("transverse", false)),
    vertices_(config.getParameter<edm::InputTag>("vertices")),
    ecalHits_(config.getParameter< std::vector<edm::InputTag> >("ecalHits")),
@@ -310,6 +320,26 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
             TString::Format("HF #sum E with %d < nvtx < %d;E;Num", i * 5, i * 5 + 6),
             en_tot_bins, 0., en_tot_max);
    }
+
+   hcal_en_e_early_ = fs->make<TH1D>("hcal_en_e_early",
+         "HE E < -25 ns;E;Num",
+         en_bins, 0., en_max);
+   hcal_en_e_central_ = fs->make<TH1D>("hcal_en_e_central",
+         "HE E within #pm 25 ns;E;Num",
+         en_bins, 0., en_max);
+   hcal_en_e_late_ = fs->make<TH1D>("hcal_en_e_late",
+         "HE E > -25 ns;E;Num",
+         en_bins, 0., en_max);
+
+   hcal_en_tot_e_early_ = fs->make<TH1D>("hcal_en_tot_e_early",
+         "HE #sum E < -25 ns;#sum E;Num",
+         en_tot_bins, 0., en_tot_max);
+   hcal_en_tot_e_central_ = fs->make<TH1D>("hcal_en_tot_e_central",
+         "HE #sum E within #pm 25 ns;#sum E;Num",
+         en_tot_bins, 0., en_tot_max);
+   hcal_en_tot_e_late_ = fs->make<TH1D>("hcal_en_tot_e_late",
+         "HE #sum E > -25 ns;#sum E;Num",
+         en_tot_bins, 0., en_tot_max);
 
    for (int i = 0; i < 10; ++i) {
       hcal_time_b_[i] = fs->make<TH1D>(
@@ -515,6 +545,10 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    double hcal_e_tot_e2 = -1.;
    double hcal_e_tot_f = -1.;
 
+   double hcal_e_tot_e_early = -1.;
+   double hcal_e_tot_e_central = -1.;
+   double hcal_e_tot_e_late = -1.;
+
    int hcal_hits_b = 0;
    int hcal_hits_e1 = 0;
    int hcal_hits_e2 = 0;
@@ -543,6 +577,10 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       hcal_e_tot_b = 0.;
       hcal_e_tot_e1 = 0.;
       hcal_e_tot_e2 = 0.;
+
+      hcal_e_tot_e_early = 0.;
+      hcal_e_tot_e_early = 0.;
+      hcal_e_tot_e_early = 0.;
 
       edm::SortedCollection<HBHERecHit>::const_iterator hit;
       for (hit = hbhe_hits->begin(); hit != hbhe_hits->end(); ++hit) {
@@ -592,12 +630,23 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          } else if (id.subdet() == HcalEndcap) {
             hcal_en_e_->Fill(en, weight);
 
+            if (hit->time() + shift_ < -25) {
+               hcal_e_tot_e_early += en;
+               hcal_en_e_early_->Fill(en, weight);
+            } else if (hit->time() + shift_ > -25) {
+               hcal_e_tot_e_late += en;
+               hcal_en_e_late_->Fill(en, weight);
+            } else {
+               hcal_e_tot_e_central += en;
+               hcal_en_e_central_->Fill(en, weight);
+            }
+
             if (0 <= nvtx_bin && nvtx_bin < 20)
                hcal_en_per_vtx_e_[nvtx_bin]->Fill(en, weight);
 
             for (int i = 0; i < 10; ++i)
                if (hcal_time_bounds_[i] <= en and en < hcal_time_bounds_[i + 1])
-                  hcal_time_e_[i]->Fill(hit->time(), weight);
+                  hcal_time_e_[i]->Fill(hit->time() + shift_, weight);
 
             for (int i = 0; i < 5; ++i) {
                if (hcal_time_vtx_bounds_[i] <= nvtx and
@@ -627,6 +676,10 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       hcal_en_tot_e_->Fill(hcal_e_tot_e1 + hcal_e_tot_e2, weight);
       hcal_en_tot_e1_->Fill(hcal_e_tot_e1, weight);
       hcal_en_tot_e2_->Fill(hcal_e_tot_e2, weight);
+
+      hcal_en_tot_e_early_->Fill(hcal_e_tot_e_early, weight);
+      hcal_en_tot_e_central_->Fill(hcal_e_tot_e_central, weight);
+      hcal_en_tot_e_late_->Fill(hcal_e_tot_e_late, weight);
 
       hcal_hits_->Fill(hcal_hits_b + hcal_hits_e1 + hcal_hits_e2, weight);
       hcal_hits_b_->Fill(hcal_hits_b, weight);

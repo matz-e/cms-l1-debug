@@ -261,6 +261,15 @@ process.recHitPlotter10_0.cut = cms.untracked.double(10.0)
 process.recHitPlotter20_0 = process.recHitPlotter.clone()
 process.recHitPlotter20_0.cut = cms.untracked.double(20.0)
 
+if data:
+    process.recHitPlotter.timeShift = cms.untracked.double(-5.)
+    process.recHitPlotter00_5.timeShift = cms.untracked.double(-5.)
+    process.recHitPlotter01_0.timeShift = cms.untracked.double(-5.)
+    process.recHitPlotter02_0.timeShift = cms.untracked.double(-5.)
+    process.recHitPlotter05_0.timeShift = cms.untracked.double(-5.)
+    process.recHitPlotter10_0.timeShift = cms.untracked.double(-5.)
+    process.recHitPlotter20_0.timeShift = cms.untracked.double(-5.)
+
 process.reEmulTrigPrimPlotter = process.triggerPrimitiveDigiPlotter.clone()
 process.reEmulTrigPrimPlotter.ecalDigis = cms.InputTag('ecalDigis', 'EcalTriggerPrimitives')
 process.reEmulTrigPrimPlotter.hcalDigis = cms.InputTag('hcalReEmulDigis', '')
