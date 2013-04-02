@@ -630,10 +630,10 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          } else if (id.subdet() == HcalEndcap) {
             hcal_en_e_->Fill(en, weight);
 
-            if (hit->time() + shift_ < -25) {
+            if (hit->time() + shift_ < -25.) {
                hcal_e_tot_e_early += en;
                hcal_en_e_early_->Fill(en, weight);
-            } else if (hit->time() + shift_ > -25) {
+            } else if (hit->time() + shift_ > 25.) {
                hcal_e_tot_e_late += en;
                hcal_en_e_late_->Fill(en, weight);
             } else {
