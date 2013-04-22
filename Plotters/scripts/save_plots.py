@@ -174,9 +174,10 @@ class Plots:
                 m = 3 - m # number of empty legend slots
             if m not in mods:
                 mods[m] = i
-        self.__legend.SetNColumns(mods[min(mods.keys())])
-        height = math.ceil(len(self.__plots) / float(mods[min(mods.keys())]))
-        self.__legend.SetY1(self.__legend.GetY2() - .75 * height)
+        width = mods[min(mods.keys())]
+        self.__legend.SetNColumns(width)
+        height = math.ceil(len(self.__plots) / float(width))
+        self.__legend.SetY1(self.__legend.GetY2() - (0.1, .085, .07)[width - 1] * height)
 
         pad.Divide(1,2)
         pad.GetPad(1).SetPad(0., .333, 1., 1.)
@@ -330,7 +331,6 @@ def create_stack(hists, files, norms=None, adjustlimits=True, limits=None, logpl
     # l.SetNColumns(min(len(files), 3 if not mc_cmp else 4))
 
     stack = Plots(logplot=logplot, limits=limits)
-    stack_rel = Plots(logplot=logplot, limits=limits)
 
     for (h, f, n) in zip(hists, files, norms):
         if normalized:
