@@ -227,6 +227,7 @@ process.load('Debug.Plotters.CaloRegionCmpPlotter_cfi')
 process.load('Debug.Plotters.DigiPlotter_cfi')
 process.load('Debug.Plotters.L1GctPlotter_cfi')
 process.load('Debug.Plotters.L1JetPlotter_cfi')
+process.load('Debug.Plotters.L1TriggerPlotter_cfi')
 process.load('Debug.Plotters.PileUpPlotter_cfi')
 process.load('Debug.Plotters.RecHitPlotter_cfi')
 process.load('Debug.Plotters.RecHitTPPlotter_cfi')
@@ -288,6 +289,9 @@ process.reEmulCaloRegionPlotter.caloRegions = cms.InputTag('rctReEmulDigis')
 process.reEmulGctPlotter = process.gctPlotter.clone()
 process.reEmulGctPlotter.l1GctSums = cms.InputTag('gctReEmulDigis')
 
+process.reEmulTrigPlotter = process.trigPlotter.clone()
+process.reEmulTrigPlotter.l1Bits = cms.InputTag('simGtDigis')
+
 process.reEmulJetPlotter = process.jetPlotter.clone()
 process.reEmulJetPlotter.l1Jets = cms.untracked.string('hltL1extraParticles')
 
@@ -301,13 +305,16 @@ if mc:
 # Plotter path assembly
 # =====================
 
+if raw or reco:
+    process.p *= \
+            process.gctPlotter * \
+            process.jetPlotter * \
+            process.trigPlotter
 if raw:
     process.p *= \
             process.digiPlotter * \
             process.triggerPrimitiveDigiPlotter * \
-            process.caloRegionPlotter * \
-            process.gctPlotter * \
-            process.jetPlotter
+            process.caloRegionPlotter
 if raw and reemul:
     process.p *= \
             process.caloRegionCmpPlotter * \
@@ -315,6 +322,7 @@ if raw and reemul:
             process.reEmulCaloRegionPlotter * \
             process.reEmulGctPlotter * \
             process.reEmulJetPlotter * \
+            process.reEmulTrigPlotter * \
             process.triggerPrimitiveDigiCmpPlotter
 
 if reco or do_reco:
