@@ -8,6 +8,7 @@
 <use name="CondFormats/DataRecord"/>
 <use name="CondFormats/EcalObjects"/>
 <use name="CondFormats/HcalObjects"/>
+<use name="CondFormats/L1TObjects"/>
 <use name="DataFormats/CaloTowers"/>
 <use name="DataFormats/EcalDetId"/>
 <use name="DataFormats/EcalDigi"/>
@@ -17,6 +18,7 @@
 <use name="DataFormats/HcalRecHit"/>
 <use name="DataFormats/L1CaloTrigger"/>
 <use name="DataFormats/L1GlobalCaloTrigger"/>
+<use name="DataFormats/L1GlobalTrigger"/>
 <use name="DataFormats/L1Trigger"/>
 <use name="DataFormats/TrackReco"/>
 <use name="DataFormats/VertexReco"/>

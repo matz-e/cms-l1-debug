@@ -100,7 +100,7 @@ L1TriggerPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       }
 
       for (int i = 0; i < 128; ++i)
-         trig_bits_->Fill(i + 1, bits->decisionWord()[i] * weight);
+         trig_bits_->Fill(i, bits->decisionWord()[i] * weight);
    }
 }
 
