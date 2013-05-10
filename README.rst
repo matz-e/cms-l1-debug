@@ -1,4 +1,3 @@
-===
 Plotting package for L1 and other quantities
 ===
 
