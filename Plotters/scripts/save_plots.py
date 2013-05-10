@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+reemulated = True
 reweighed = True
 unweighed = True
 plot_only = ""
@@ -81,6 +82,14 @@ class Plots:
         self.__plots = []
         self.__title = title
 
+    def __del__(self):
+        for p in self.__plots:
+            del p
+        del self.__legend
+
+    def __len__(self):
+        return len(self.__plots)
+
     def find_x_limits(self):
         if not self.__adjust:
             return self.__limits
@@ -124,7 +133,10 @@ class Plots:
 
         index = []
         for (i, bin) in enumerate(bins[:-1]):
-            index.append(bin > pmin and bins[i + 1] > pmin)
+            if upper:
+                index.append(bin > pmin and bins[i + 1] > pmin)
+            else:
+                index.append(bin > pmin)
 
         if True not in index:
             index = map(lambda b: b > pmin, bins)
@@ -223,7 +235,7 @@ class Plots:
         if not self.__logplot:
             ymin = 0.
         else:
-            ymax *= 4.
+            ymax *= 10.
 
         first = True
         for plt in reversed(drawn_plots):
@@ -316,6 +328,7 @@ class Plots:
             else:
                 copy.DrawCopy("same hist" + opt)
                 # copy.DrawCopy("same")
+            del copy
 
         pad.Modified()
         pad.Update()
@@ -360,6 +373,9 @@ def plot_stacks(stacks, filename, width=None):
     c = r.TCanvas("c", "", width * 600, height * 600)
     c.Divide(width, height)
 
+    if len(stacks[0]) == 0:
+        return
+
     for (n, s) in enumerate(stacks, 1):
         c.cd(n)
         s.draw(c.GetPad(n), rebin=rebin(filename))
@@ -373,11 +389,15 @@ modifiers = {
     '1pv': '1 PV'
 }
 pileup = {
+    'none': 'VLPU',
+    'nonehf': 'VLPU mod HF',
+    'nonehf2': 'VLPU mod HF (2)',
     '66': 'PU66',
     '45': 'PU45',
     '2012C': '2012C',
     '2012Cext': '2012C 200ns',
     '2012Cext2': '2012C 300ns',
+    '2012Chf': '2012C mod HF',
     'front': '2012C front',
     'back': '2012C back'
 }
@@ -460,6 +480,9 @@ def legend(path, hist):
         if reweighed and unweighed:
             hist.SetLineStyle(r.kDashed)
 
+    if 'reemul' in basedir and 'reweighted' in basedir and reweighed and unweighed:
+        hist.SetLineStyle(r.kDashDotted)
+
     n = counts[f][0]
     # Hack to get the right normalization for pileup histograms
     if 'pileup' in f:
@@ -481,9 +504,9 @@ def get_num_events(fn):
         c = hist.GetEntries()
     if hist_rw:
         c_rw = hist.Integral()
-    
+
     return (c, c_rw)
-    
+
     hist = r.gDirectory.Get('{f}:gctPlotter/et_tot'.format(f=fn))
     hist_rw = r.gDirectory.Get('{f}:reWeightedGctPlotter/et_tot'.format(f=fn))
     if hist:
@@ -493,6 +516,20 @@ def get_num_events(fn):
 
     if c != 0:
         return (c, c_rw)
+
+def collect_paths(files, path):
+    paths = []
+    for fn in files:
+        if unweighed or '_data_' in fn.lower():
+            paths.append(fn + ':/' + path)
+        if reweighed and '_mc_' in fn.lower():
+            paths.append(fn + ':/reWeighted' + path[0].upper() + path[1:])
+        if reemulated:
+            if unweighed or '_data_' in fn.lower():
+                paths.append(fn + ':/reEmul' + path[0].upper() + path[1:])
+            if reweighed and '_mc_' in fn.lower():
+                paths.append(fn + ':/reWeightedReEmul' + path[0].upper() + path[1:])
+    return paths
 
 def which_plots(filename):
     """Returns whether regular and logplots should be done.
@@ -505,16 +542,126 @@ def which_plots(filename):
             return REGPLOT
         elif 'time' in filename:
             return LOGPLOT
+        elif 'digi' in filename and 'vtx' in filename:
+            return NOPLOT
         elif 'all' in filename.lower() or re.search(r'\d\d_\d', filename):
             return NOPLOT
         return LOGPLOT
     return LOGPLOT|REGPLOT
+
+class FixedProj:
+    def __init__(self, proj):
+        self.__proj = proj
+    def __call__(self, hist):
+        p = self.__proj(hist).Clone()
+        p.SetYTitle(hist.GetZaxis().GetTitle())
+        return p
+
+projs = {'ieta': FixedProj(r.TH2.ProjectionX),
+         'iphi': FixedProj(r.TH2.ProjectionY)}
 
 def summarize(pdffile, files):
     handles = [r.TFile(fn) for fn in files]
 
     for fn in files:
         counts[fn] = get_num_events(fn)
+
+    for d in handles[0].GetListOfKeys():
+        dir = d.ReadObj()
+        path = dir.GetPath()
+        basepath = path.split(':/', 1)[1]
+
+        # Skip directories that are secondary
+        if 'reemul' in path.lower() or 'reweigh' in path.lower():
+            continue
+
+        if not re.match(plot_only, basepath.lower(), re.IGNORECASE):
+            continue
+
+        for k in dir.GetListOfKeys():
+            key = k.GetName()
+
+            mode = which_plots(pdffile.format(d=basepath.lower(), p=key))
+            if mode == NOPLOT:
+                continue
+
+            hists, legends, norms = [], [], []
+            for p in collect_paths(files, basepath):
+                obj = r.gDirectory.Get(p + "/" + key)
+                if not obj:
+                    sys.stderr.write("Can't find: {p}/{k}\n".format(p=path, k=key))
+                    continue
+                l, n, b, o = legend(p, obj)
+                norms.append(n)
+                hists.append(o)
+                legends.append(l)
+
+            if key == 'trig_bits':
+                continue
+
+            if len(hists) == 0:
+                continue
+
+            if not isinstance(hists[0], r.TH2):
+                s = create_stack(hists, legends, norms,
+                        normalized=not isinstance(hists[0], r.TProfile),
+                        limits=override_limits[key] if key in override_limits else None)
+                if mode & REGPLOT:
+                    plot_stacks([s], pdffile.format(p=key, d=basepath.lower()))
+                if mode & LOGPLOT:
+                    s.set_logplot(True)
+                    plot_stacks([s], pdffile.format(p=key + "_log", d=basepath.lower()))
+            else:
+                if not basepath.endswith("_mp"):
+                    newbase = "_".join([basepath.rsplit("_", 1)[0], "mp"])
+                    norm_hists = []
+                    for p in collect_paths(files, newbase):
+                        obj = r.gDirectory.Get(p + "/" + key)
+                        if not obj:
+                            sys.stderr.write("Can't find: {p}/{k}\n".format(p=path, k=key))
+                            continue
+                        norm_hists.append(obj)
+
+                    for (axis, proj) in projs.items():
+                        if 'calo' in basepath.lower():
+                            quant = 'Region'
+                        elif 'digi' in basepath.lower() or 'trigprim' in basepath.lower():
+                            quant = 'Digi'
+                        elif 'jet' in basepath.lower():
+                            quant = 'Jet'
+                        elif 'rechit' in basepath.lower():
+                            quant = 'RecHit'
+                        elif 'track' in basepath.lower():
+                            quant = 'Track'
+                        else:
+                            sys.stderr.write('Please add a quantity assignment for "{k}"\n.'.format(k=basepath))
+                            raise
+
+                        nhists = []
+                        for (h, n) in zip(map(proj, hists), map(proj, norm_hists)):
+                            h.Divide(n)
+                            h.SetYTitle(val.GetZaxis().GetTitle() + ' / ' + quant)
+                            nhists.append(h)
+
+                        s = create_stack(nhists, legends, norms, normalized=False,
+                                limits=override_limits[key] if key in override_limits else None)
+                        if mode & REGPLOT:
+                            plot_stacks([s], pdffile.format(p=key + "_" + axis + "_mp", d=basepath.lower()))
+                        if mode & LOGPLOT:
+                            s.set_logplot(True)
+                            plot_stacks([s], pdffile.format(p=key + "_" + axis + "_mp_log", d=basepath.lower()))
+
+                for (axis, proj) in projs.items():
+                    phists = map(proj, hists)
+                    s = create_stack(phists, legends, norms, normalized=True,
+                            limits=override_limits[key] if key in override_limits else None)
+                    if mode & REGPLOT:
+                        plot_stacks([s], pdffile.format(p=key + "_" + axis, d=basepath.lower()))
+                    if mode & LOGPLOT:
+                        s.set_logplot(True)
+                        plot_stacks([s], pdffile.format(p=key + "_" + axis + "_log", d=basepath.lower()))
+
+    return
 
     plots = {}
     plots_2d = {}
@@ -633,17 +780,6 @@ def summarize(pdffile, files):
                     plot_stacks([s], pdffile.format(p=real_key + '_log', d=basedir))
 
     for ((basedir, key), subdict) in plots_2d.items():
-        class FixedProj:
-            def __init__(self, proj):
-                self.__proj = proj
-            def __call__(self, hist):
-                p = self.__proj(hist).Clone()
-                p.SetYTitle(hist.GetZaxis().GetTitle())
-                return p
-
-        projs = {'ieta': FixedProj(r.TH2.ProjectionX),
-                 'iphi': FixedProj(r.TH2.ProjectionY)}
-
         mps = subdict['mp']
         for other in subdict.keys():
             if other == 'mp':
@@ -664,20 +800,6 @@ def summarize(pdffile, files):
 
                 norm_by_event = '_' not in subkey
                 real_key = '_'.join([key, subkey, axis])
-
-                if 'calo' in basedir:
-                    quant = 'Region'
-                elif 'digi' in basedir or 'trigprim' in basedir:
-                    quant = 'Digi'
-                elif 'jet' in basedir:
-                    quant = 'Jet'
-                elif 'rechit' in basedir:
-                    quant = 'RecHit'
-                elif 'track' in basedir:
-                    quant = 'Track'
-                else:
-                    sys.stderr.write('Please add a quantity assignment for "{k}"\n.'.format(k=basedir))
-                    raise
 
                 if not norm_by_event:
                     tmp_ps, ls, ns = zip(*objs)
