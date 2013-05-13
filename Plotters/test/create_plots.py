@@ -19,6 +19,7 @@ n = 1000
 pu = '45'
 data = False
 debug = False
+runera = ''
 
 do_reco = False
 
@@ -83,23 +84,48 @@ process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(n))
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 process.GlobalTag.connect   = 'frontier://FrontierProd/CMS_COND_31X_GLOBALTAG'
 process.GlobalTag.pfnPrefix = cms.untracked.string('frontier://FrontierProd/')
-if data:
-    process.GlobalTag.globaltag = cms.string('GR_R_53_V18::All')
-else:
-    process.GlobalTag.globaltag = cms.string('START53_V15::All')
 
-process.load('Configuration.StandardSequences.GeometryExtended_cff')
+from Configuration.AlCa.GlobalTag import GlobalTag as alcaGlobalTag
+from Configuration.AlCa.autoCond import conditions_L1_Run2012D as l1cond_raw
+
+l1cond = dict([((r, None), (t, c)) for (t, r, c) in map(lambda s: s.split(","), l1cond_raw)])
+tag = "GR_R_53_V21::All" if data else "START53_V20::All"
+process.GlobalTag = alcaGlobalTag(process.GlobalTag,
+        globaltag=tag, conditions=l1cond)
+
+if mc:
+    process.GlobalTag.toGet = cms.VPSet(
+            cms.PSet(record=cms.string("L1GctChannelMaskRcd"),
+                     tag=cms.string("L1GctChannelMask_AllEnergySumsMaskedFromHF_jetCentresToEta3Allowed_mc"),
+                     connect=cms.untracked.string("frontier://FrontierProd/CMS_COND_31X_L1T")),
+            cms.PSet(record=cms.string("L1GctJetFinderParamsRcd"),
+                     tag=cms.string("L1GctJetFinderParams_GCTPhysics_2012_04_27_JetSeedThresh5GeV_mc"),
+                     connect=cms.untracked.string("frontier://FrontierProd/CMS_COND_31X_L1T")),
+            cms.PSet(record=cms.string("L1HfRingEtScaleRcd"),
+                     tag=cms.string("L1HfRingEtScale_GCTPhysics_2012_04_27_JetSeedThresh5GeV_mc"),
+                     connect=cms.untracked.string("frontier://FrontierProd/CMS_COND_31X_L1T")),
+            cms.PSet(record=cms.string("L1JetEtScaleRcd"),
+                     tag=cms.string("L1JetEtScale_GCTPhysics_2012_04_27_JetSeedThresh5GeV_mc"),
+                     connect=cms.untracked.string("frontier://FrontierProd/CMS_COND_31X_L1T")),
+            cms.PSet(record=cms.string("L1HtMissScaleRcd"),
+                     tag=cms.string("L1HtMissScale_GCTPhysics_2012_04_27_JetSeedThresh5GeV_mc"),
+                     connect=cms.untracked.string("frontier://FrontierProd/CMS_COND_31X_L1T"))
+            )
+
 # process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 # process.load('Configuration.StandardSequences.MagneticField_cff')
-process.load('Configuration.StandardSequences.Services_cff')
+
 process.load('Configuration.StandardSequences.GeometryDB_cff')
+process.load('Configuration.StandardSequences.GeometryExtended_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
-if mc:
-    process.load('Configuration.StandardSequences.Reconstruction_cff')
-else:
-    process.load('Configuration.StandardSequences.Reconstruction_Data_cff')
+process.load('Configuration.StandardSequences.Services_cff')
 
 if do_reco:
+    if mc:
+        process.load('Configuration.StandardSequences.Reconstruction_cff')
+    else:
+        process.load('Configuration.StandardSequences.Reconstruction_Data_cff')
+
     process.GlobalTag.toGet = cms.VPSet(
             cms.PSet(record = cms.string('EcalSampleMaskRcd'),
                 tag = cms.string('EcalSampleMask_offline'),
