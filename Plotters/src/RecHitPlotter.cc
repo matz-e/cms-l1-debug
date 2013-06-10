@@ -531,7 +531,7 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       }
       ecal_en_tot_e_->Fill(ecal_e_tot_e, weight);
       ecal_hits_e_->Fill(ecal_hits_e, weight);
-      ecal_en_tot_vtx_e_->Fill(nvtx, ecal_e_tot_e, weight); 
+      ecal_en_tot_vtx_e_->Fill(nvtx, ecal_e_tot_e, weight);
 
       if (0 <= nvtx_bin && nvtx_bin < 20)
          ecal_en_tot_per_vtx_e_[nvtx_bin]->Fill(ecal_e_tot_e, weight);
@@ -687,8 +687,8 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       hcal_hits_e1_->Fill(hcal_hits_e1, weight);
       hcal_hits_e2_->Fill(hcal_hits_e2, weight);
 
-      hcal_en_tot_vtx_b_->Fill(nvtx, hcal_e_tot_b, weight); 
-      hcal_en_tot_vtx_e_->Fill(nvtx, hcal_e_tot_e1 + hcal_e_tot_e2, weight); 
+      hcal_en_tot_vtx_b_->Fill(nvtx, hcal_e_tot_b, weight);
+      hcal_en_tot_vtx_e_->Fill(nvtx, hcal_e_tot_e1 + hcal_e_tot_e2, weight);
 
       if (0 <= nvtx_bin && nvtx_bin < 20) {
          hcal_en_tot_per_vtx_b_[nvtx_bin]->Fill(hcal_e_tot_b, weight);
