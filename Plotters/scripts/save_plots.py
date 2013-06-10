@@ -3,6 +3,7 @@
 reemulated = True
 reweighed = True
 unweighed = True
+unemulated = True
 plot_only = ""
 
 # Argument parsing
@@ -35,6 +36,7 @@ REGPLOT = 0b10
 import math
 import os
 import os.path
+import random
 import re
 import ROOT as r
 
@@ -282,13 +284,16 @@ class Plots:
             ymin = min(self.get_min(copy), ymin)
             ymax = max(self.get_max(copy), ymax)
 
-        if ymax / ymin > 10.:
-            r.gPad.SetLogy(True)
-            ymax *= 2.
-            ymin *= .7
-        else:
-            ymax *= 1.1
-            ymin *= 0.9
+        # if ymax / ymin > 10. and ymax > 20.:
+            # r.gPad.SetLogy(True)
+            # ymax *= 2.
+            # ymin *= .7
+        # else:
+            # ymax *= 1.1
+            # ymin *= 0.9
+
+        ymax = 7.5
+        ymin = 0.
 
         first = True
         for plt in reversed(drawn_plots[1:]):
@@ -395,8 +400,14 @@ pileup = {
     '66': 'PU66',
     '45': 'PU45',
     '2012C': '2012C',
+    '2012CnoE': '2012C',
+    '2012CnoH': '2012C',
     '2012Cext': '2012C 200ns',
+    '2012CextnoE': '2012C 200ns',
+    '2012CextnoH': '2012C 200ns',
     '2012Cext2': '2012C 300ns',
+    '2012Cext2noE': '2012C 300ns',
+    '2012Cext2noH': '2012C 300ns',
     '2012Chf': '2012C mod HF',
     'front': '2012C front',
     'back': '2012C back'
@@ -405,7 +416,7 @@ pileup = {
 data_colors = [1, 11, 12, 13, 14, 15, 16]
 data_files = []
 data_markers = [r.kFullDotLarge, r.kFullSquare, r.kFullTriangleUp, r.kFullTriangleDown]
-mc_colors = [2, 8, 9, 6, 7, 41, 46, 38]
+mc_colors = [2, 8, 9, 6, 7, 41, 46, 38, 2, 8, 9, 6, 7]
 mc_files = []
 
 def legend(path, hist):
@@ -434,7 +445,7 @@ def legend(path, hist):
                 hist.SetOption("PE")
             hist.SetLineColor(mc_colors[mc_files.index(f)])
             hist.SetMarkerColor(mc_colors[mc_files.index(f)])
-            if 'reemul' in basedir:
+            if 'reemul' in basedir and unemulated:
                 hist.SetMarkerStyle(r.kOpenDiamond)
             elif 'reweighted' in basedir and reweighed and unweighed:
                 hist.SetMarkerStyle(r.kOpenCross)
@@ -471,16 +482,17 @@ def legend(path, hist):
 
     if 'reemul' in basedir:
         basedir = basedir.replace('reemul', '')
-        hist.SetLineStyle(r.kDotted)
+        if unemulated:
+            hist.SetLineStyle(r.kDotted)
         label += ' reemul.'
 
     if 'reweighted' in basedir:
         basedir = basedir.replace('reweighted', '')
         label += ' rw.'
-        if reweighed and unweighed:
+        if reweighed and unweighed and unemulated:
             hist.SetLineStyle(r.kDashed)
 
-    if 'reemul' in basedir and 'reweighted' in basedir and reweighed and unweighed:
+    if 'reemul' in basedir and 'reweighted' in basedir and reweighed and unweighed and unemulated:
         hist.SetLineStyle(r.kDashDotted)
 
     n = counts[f][0]
@@ -503,7 +515,7 @@ def get_num_events(fn):
     if hist:
         c = hist.GetEntries()
     if hist_rw:
-        c_rw = hist.Integral()
+        c_rw = hist_rw.Integral()
 
     return (c, c_rw)
 
@@ -512,7 +524,7 @@ def get_num_events(fn):
     if hist:
         c = hist.GetEntries()
     if hist_rw:
-        c_rw = hist.Integral()
+        c_rw = hist_rw.Integral()
 
     if c != 0:
         return (c, c_rw)
@@ -520,10 +532,11 @@ def get_num_events(fn):
 def collect_paths(files, path):
     paths = []
     for fn in files:
-        if unweighed or '_data_' in fn.lower():
-            paths.append(fn + ':/' + path)
-        if reweighed and '_mc_' in fn.lower():
-            paths.append(fn + ':/reWeighted' + path[0].upper() + path[1:])
+        if unemulated:
+            if unweighed or '_data_' in fn.lower():
+                paths.append(fn + ':/' + path)
+            if reweighed and '_mc_' in fn.lower():
+                paths.append(fn + ':/reWeighted' + path[0].upper() + path[1:])
         if reemulated:
             if unweighed or '_data_' in fn.lower():
                 paths.append(fn + ':/reEmul' + path[0].upper() + path[1:])
@@ -560,6 +573,16 @@ class FixedProj:
 projs = {'ieta': FixedProj(r.TH2.ProjectionX),
          'iphi': FixedProj(r.TH2.ProjectionY)}
 
+def rescale_histo(obj, fctr):
+    nobj = r.TH1D(obj.GetName() + "_rs" + str(random.randrange(1, 10000000)),
+            obj.GetTitle(),
+            obj.GetNbinsX(),
+            obj.GetXaxis().GetXmin(),
+            obj.GetXaxis().GetXmax() * fctr)
+    for n in range(obj.GetNbinsX()):
+        nobj.SetBinContent(n + 1, obj.GetBinContent(n + 1))
+    return nobj
+
 def summarize(pdffile, files):
     handles = [r.TFile(fn) for fn in files]
 
@@ -588,6 +611,8 @@ def summarize(pdffile, files):
             hists, legends, norms = [], [], []
             for p in collect_paths(files, basepath):
                 obj = r.gDirectory.Get(p + "/" + key)
+                if 'gctplotter' in basepath.lower():
+                    obj = rescale_histo(obj, .5)
                 if not obj:
                     sys.stderr.write("Can't find: {p}/{k}\n".format(p=path, k=key))
                     continue
@@ -660,167 +685,6 @@ def summarize(pdffile, files):
                     if mode & LOGPLOT:
                         s.set_logplot(True)
                         plot_stacks([s], pdffile.format(p=key + "_" + axis + "_log", d=basepath.lower()))
-
-    return
-
-    plots = {}
-    plots_2d = {}
-    plots_digi = {}
-    plots_tp = {}
-
-    for f in handles:
-        for d in f.GetListOfKeys():
-            dir = d.ReadObj()
-            path = dir.GetPath()
-
-            for k in dir.GetListOfKeys():
-                key = k.GetName()
-
-                mode = which_plots(pdffile.format(d=path.lower().split(':', 1)[1], p=key))
-                if mode == NOPLOT:
-                    continue
-                if 'reweighted' in path.lower():
-                    if not reweighed:
-                        continue
-                else:
-                    if not unweighed and '_mc_' in path.lower():
-                        continue
-
-                obj = k.ReadObj()
-                leg, norm, basedir, obj = legend(path, obj)
-
-                if not re.match(plot_only, basedir, re.IGNORECASE):
-                    continue
-
-                if obj.GetEntries() == 0:
-                    print "{k} in {p} empty!".format(k=key, p=path)
-                    continue
-
-                if 'trig' in path.lower():
-                    # TODO remove hotfix after fixing hist naming in
-                    # analyzer
-                    if 'tp' not in key:
-                        key = 'tp_' + key
-                    if 'reemul' in leg:
-                        continue
-
-                # TODO remove hotfix after fixing analyzer
-                if key == 'tp_ecal_soi_adc_':
-                    key = 'tp_ecal_soi_adc'
-
-                subkey = None
-
-                if type(obj) == r.TH2F or type(obj) == r.TH2D:
-                    if '_' not in key:
-                        continue
-                    key, subkey = key.rsplit('_', 1)
-                    plot_dict = plots_2d
-                elif 'tp' in key and 'digi' in key and not 'mp' in key:
-                    key, subkey = key.rsplit('_', 1)
-                    plot_dict = plots_tp
-                elif 'digi' in key and not 'mp' in key:
-                    key, subkey = key.rsplit('_', 1)
-                    plot_dict = plots_digi
-                else:
-                    plot_dict = plots
-
-                k = (basedir, key)
-                if k not in plot_dict:
-                    plot_dict[k] = [] if not subkey else {}
-                if subkey:
-                    if subkey not in plot_dict[k]:
-                        plot_dict[k][subkey] = []
-                    plot_dict[k][subkey].append((obj, leg, norm))
-                else:
-                    plot_dict[k].append((obj, leg, norm))
-
-    for (basedir, key), objs in plots.items():
-        mode = which_plots(pdffile.format(d=basedir, p=key))
-        if mode == NOPLOT:
-            continue
-
-        ps, ls, ns = zip(*objs) # unzip
-        if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F, r.TProfile]:
-            continue
-
-        norm = not isinstance(ps[0], r.TProfile)
-        if key in override_limits:
-            s = create_stack(ps, ls, ns, limits=override_limits[key],
-                    normalized=norm)
-        else:
-            s = create_stack(ps, ls, ns, normalized=norm)
-
-        if mode & REGPLOT:
-            plot_stacks([s], pdffile.format(p=key, d=basedir))
-        if mode & LOGPLOT:
-            s.set_logplot(True)
-            plot_stacks([s], pdffile.format(p=key + '_log', d=basedir))
-
-    for plot_dict in (plots_digi, plots_tp):
-        for ((basedir, key), subdict) in plot_dict.items():
-            # limits = (float('inf'), 0)
-            # for lst in subdict.values():
-                # for tpl in lst:
-                    # limits = greater(limits, get_limits(tpl[0]))
-            # print key, limits
-            for subkey, objs in subdict.items():
-                mode = which_plots(pdffile.format(d=basedir, p=real_key))
-                if mode == NOPLOT:
-                    continue
-
-                real_key = '_'.join([key, subkey])
-                ps, ls, ns = zip(*objs) # unzip
-                if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F]:
-                    continue
-                s = create_stack(ps, ls, ns)
-                if mode & REGPLOT:
-                    plot_stacks([s], pdffile.format(p=real_key, d=basedir))
-                if mode & LOGPLOT:
-                    s.set_logplot(True)
-                    plot_stacks([s], pdffile.format(p=real_key + '_log', d=basedir))
-
-    for ((basedir, key), subdict) in plots_2d.items():
-        mps = subdict['mp']
-        for other in subdict.keys():
-            if other == 'mp':
-                continue
-            zipped = zip(subdict[other], mps)
-            # print zipped
-            merged = map(lambda (o, m): [(o[0].Clone(), m[0].Clone())] + list(o[1:]), zipped)
-            # print merged
-
-            subdict['_'.join([other, 'mp'])] = merged
-
-        for (axis, proj) in projs.items():
-            # subkey one of (mp, et, adc, ...)
-            for subkey, objs in subdict.items():
-                mode = which_plots(pdffile.format(d=basedir, p=key + '_' + subkey))
-                if mode == NOPLOT:
-                    continue
-
-                norm_by_event = '_' not in subkey
-                real_key = '_'.join([key, subkey, axis])
-
-                if not norm_by_event:
-                    tmp_ps, ls, ns = zip(*objs)
-                    ps = []
-                    for (val, mp) in tmp_ps:
-                        tmp_v = proj(val)
-                        tmp_m = proj(mp)
-                        tmp_v.Divide(tmp_m)
-                        tmp_v.SetYTitle(val.GetZaxis().GetTitle() + ' / ' + quant)
-                        ps.append(tmp_v)
-                else:
-                    ps, ls, ns = zip(*objs) # unzip
-                    ps = map(proj, ps)
-                if len(ps) == 0 or type(ps[0]) not in [r.TH1D, r.TH1F]:
-                    continue
-                s = create_stack(ps, ls, ns, adjustlimits=False, normalized=norm_by_event)
-                if mode & REGPLOT:
-                    plot_stacks([s], pdffile.format(p=real_key, d=basedir))
-                if mode & LOGPLOT:
-                    s.set_logplot(True)
-                    plot_stacks([s], pdffile.format(p=real_key + '_log', d=basedir))
 
 if len(new_args) < 2:
     sys.stderr.write(
