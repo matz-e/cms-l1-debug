@@ -36,10 +36,12 @@
 
 #include "DataFormats/Common/interface/SortedCollection.h"
 #include "DataFormats/CaloTowers/interface/CaloTower.h"
+#include "DataFormats/VertexReco/interface/Vertex.h"
 
 #include "Debug/Plotters/interface/BasePlotter.h"
 
 #include "TH1D.h"
+#include "TProfile.h"
 
 //
 // class declaration
@@ -90,13 +92,27 @@ class CaloTowerPlotter : public edm::EDAnalyzer, BasePlotter {
 
       TH1D* n_;
 
+      TProfile* et_tot_vtx_b_;
+      TProfile* et_tot_vtx_e_;
+      TProfile* et_tot_vtx_f_;
+      TProfile* et_tot_vtx_b_em_;
+      TProfile* et_tot_vtx_e_em_;
+      TProfile* et_tot_vtx_f_em_;
+      TProfile* et_tot_vtx_b_had_;
+      TProfile* et_tot_vtx_e_had_;
+      TProfile* et_tot_vtx_f_had_;
+
+      double cut_;
       edm::InputTag towers_;
+      edm::InputTag vertices_;
 };
 
 CaloTowerPlotter::CaloTowerPlotter(const edm::ParameterSet& config) :
    edm::EDAnalyzer(),
    BasePlotter(config),
-   towers_(config.getParameter<edm::InputTag>("towers"))
+   cut_(config.getUntrackedParameter<double>("cut", -666.)),
+   towers_(config.getParameter<edm::InputTag>("towers")),
+   vertices_(config.getParameter<edm::InputTag>("vertices"))
 {
    edm::Service<TFileService> fs;
 
@@ -156,6 +172,27 @@ CaloTowerPlotter::CaloTowerPlotter(const edm::ParameterSet& config) :
    et_tot_f_had_ = fs->make<TH1D>("et_tot_f_had",
          "CaloTower total hadronic energy spectrum (forward);#sum E_{T};CaloTowers", 700, 0., 1400.);
 
+   et_tot_vtx_b_ = fs->make<TProfile>("et_tot_vtx_b",
+         "CaloTower <#sum E_{T}> vs. #PV (abs(ieta) <= 16);n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+   et_tot_vtx_e_ = fs->make<TProfile>("et_tot_vtx_e",
+         "CaloTower <#sum E_{T}> vs. #PV (abs(ieta) <= 28);n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+   et_tot_vtx_f_ = fs->make<TProfile>("et_tot_vtx_f",
+         "CaloTower <#sum E_{T}> vs. #PV (abs(ieta) > 28);n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+
+   et_tot_vtx_b_em_ = fs->make<TProfile>("et_tot_vtx_b_em",
+         "CaloTower EM <#sum E_{T}> vs. #PV (abs(ieta) <= 16);n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+   et_tot_vtx_e_em_ = fs->make<TProfile>("et_tot_vtx_e_em",
+         "CaloTower EM <#sum E_{T}> vs. #PV (abs(ieta) <= 28);n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+   et_tot_vtx_f_em_ = fs->make<TProfile>("et_tot_vtx_f_em",
+         "CaloTower EM <#sum E_{T}> vs. #PV (abs(ieta) > 28);n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+
+   et_tot_vtx_b_had_ = fs->make<TProfile>("et_tot_vtx_b_had",
+         "CaloTower Had. <#sum E_{T}> vs. #PV (abs(ieta) <= 16);n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+   et_tot_vtx_e_had_ = fs->make<TProfile>("et_tot_vtx_e_had",
+         "CaloTower Had. <#sum E_{T}> vs. #PV (abs(ieta) <= 28);n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+   et_tot_vtx_f_had_ = fs->make<TProfile>("et_tot_vtx_f_had",
+         "CaloTower Had. <#sum E_{T}> vs. #PV (abs(ieta) > 28);n_{vertices};#sum E_{T}", 101, -0.5, 100.5);
+
    n_ = fs->make<TH1D>("n",
          "## of CaloTowers;n_{towers};Num",
          350, 0, 700);
@@ -166,6 +203,18 @@ CaloTowerPlotter::~CaloTowerPlotter() {}
 void
 CaloTowerPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 {
+   edm::Handle< std::vector<reco::Vertex> > vertices;
+   if (!event.getByLabel(vertices_, vertices)){
+      edm::LogError("RecHitPlotter") << "No valid vertices!" << std::endl;
+      return;
+   }
+   int nvtx = 0;
+   for (const auto& v: *(vertices.product())) {
+      if (v.ndof() < 5 || fabs(v.z()) > 24. || fabs(v.position().rho()) > 2.)
+         continue;
+      nvtx++;
+   }
+
    edm::Handle< edm::SortedCollection<CaloTower> > towers;
    if (!event.getByLabel(towers_, towers)) {
       edm::LogError("CaloTowerPlotter") <<
@@ -194,6 +243,9 @@ CaloTowerPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    double et_tot_f_had = 0.;
 
    for (const auto& t: *(towers.product())) {
+      if (t.energy() < cut_)
+         continue;
+
       et_tot += t.et();
       et_tot_em += t.emEt();
       et_tot_had += t.hadEt();
@@ -244,6 +296,16 @@ CaloTowerPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    et_tot_f_->Fill(et_tot_f, weight);
    et_tot_f_em_->Fill(et_tot_f_em, weight);
    et_tot_f_had_->Fill(et_tot_f_had, weight);
+
+   et_tot_vtx_b_->Fill(nvtx, et_tot_b, weight);
+   et_tot_vtx_e_->Fill(nvtx, et_tot_e, weight);
+   et_tot_vtx_f_->Fill(nvtx, et_tot_f, weight);
+   et_tot_vtx_b_em_->Fill(nvtx, et_tot_b_em, weight);
+   et_tot_vtx_e_em_->Fill(nvtx, et_tot_e_em, weight);
+   et_tot_vtx_f_em_->Fill(nvtx, et_tot_f_em, weight);
+   et_tot_vtx_b_had_->Fill(nvtx, et_tot_b_had, weight);
+   et_tot_vtx_e_had_->Fill(nvtx, et_tot_e_had, weight);
+   et_tot_vtx_f_had_->Fill(nvtx, et_tot_f_had, weight);
 }
 
 void
