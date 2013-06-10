@@ -22,6 +22,8 @@ debug = False
 runera = ''
 
 do_reco = False
+use_ecal = True
+use_hcal = True
 
 alt = False # alternative dataset
 aod = False
@@ -238,6 +240,11 @@ if raw and reemul:
             * process.HLTL1UnpackerSequence \
             * process.l1GtUnpack 
 
+    if not use_ecal:
+        process.rctReEmulDigis.useEcal = cms.bool(False)
+    if not use_hcal:
+        process.rctReEmulDigis.useHcal = cms.bool(False)
+
 if do_reco:
     process.q *= process.reconstruction
 
@@ -269,6 +276,21 @@ process.jetPlotter.l1Jets = cms.untracked.string('l1extraParticles')
 
 if raw and reco:
     process.digiPlotter.useVertices = cms.untracked.bool(True)
+
+process.caloTowerPlotter01 = process.caloTowerPlotter.clone()
+process.caloTowerPlotter01.cut = cms.untracked.double(1.)
+
+process.caloTowerPlotter02 = process.caloTowerPlotter.clone()
+process.caloTowerPlotter02.cut = cms.untracked.double(2.)
+
+process.caloTowerPlotter03 = process.caloTowerPlotter.clone()
+process.caloTowerPlotter03.cut = cms.untracked.double(3.)
+
+process.caloTowerPlotter04 = process.caloTowerPlotter.clone()
+process.caloTowerPlotter04.cut = cms.untracked.double(4.)
+
+process.caloTowerPlotter05 = process.caloTowerPlotter.clone()
+process.caloTowerPlotter05.cut = cms.untracked.double(5.)
 
 process.recHitPlotter00_1 = process.recHitPlotter.clone()
 process.recHitPlotter00_1.cut = cms.untracked.double(0.1)
@@ -354,6 +376,11 @@ if raw and reemul:
 if reco or do_reco:
     process.p *= \
             process.caloTowerPlotter * \
+            process.caloTowerPlotter01 * \
+            process.caloTowerPlotter02 * \
+            process.caloTowerPlotter03 * \
+            process.caloTowerPlotter04 * \
+            process.caloTowerPlotter05 * \
             process.trackPlotter * \
             process.recHitPlotter * \
             process.recHitPlotter00_1 * \
