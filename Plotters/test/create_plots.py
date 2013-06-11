@@ -122,12 +122,12 @@ process.load('Configuration.StandardSequences.GeometryExtended_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.Services_cff')
 
-if do_reco:
-    if mc:
-        process.load('Configuration.StandardSequences.Reconstruction_cff')
-    else:
-        process.load('Configuration.StandardSequences.Reconstruction_Data_cff')
+if mc:
+    process.load('Configuration.StandardSequences.Reconstruction_cff')
+else:
+    process.load('Configuration.StandardSequences.Reconstruction_Data_cff')
 
+if do_reco:
     process.GlobalTag.toGet = cms.VPSet(
             cms.PSet(record = cms.string('EcalSampleMaskRcd'),
                 tag = cms.string('EcalSampleMask_offline'),
