@@ -13,6 +13,11 @@ transverserechitplotter00_5
 transverserechitplotter01_0
 transverserechitplotter02_0
 calotowerplotter
+calotowerplotter01
+calotowerplotter02
+calotowerplotter03
+calotowerplotter04
+calotowerplotter05
 EOF
 )
 
