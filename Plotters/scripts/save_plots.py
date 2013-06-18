@@ -67,13 +67,17 @@ class CustomLimits:
         return None
 
 override_limits = CustomLimits({
-        re.compile('ecal_en_tot'): (0, 750),
-        re.compile('cal_time'): (-100, 100)
-        })
+    re.compile('ecal_en_tot'): (0, 750),
+    re.compile('cal_time'): (-100, 100)
+    })
+override_ratio_limits = CustomLimits({
+    re.compile('gct'): (0.1, 7.2),
+    re.compile('caloregion'): (0.1, 7.2)
+    })
 
 class Plots:
     def __init__(self, title='', legend=None, logplot=False,
-            limits=None, adjust=False):
+            limits=None, ratio_limits=None, adjust=False):
         self.__adjust = adjust or (limits is None)
         if legend:
             self.__legend = legend
@@ -82,6 +86,7 @@ class Plots:
         self.__limits = limits
         self.__logplot = logplot
         self.__plots = []
+        self.__ratio_limits = ratio_limits
         self.__title = title
 
     def __del__(self):
@@ -292,8 +297,11 @@ class Plots:
             # ymax *= 1.1
             # ymin *= 0.9
 
-        ymax = 7.5
-        ymin = 0.
+        if not self.__ratio_limits:
+            ymax = 1.55
+            ymin = 0.45
+        else:
+            ymax, ymin = self.__ratio_limits
 
         first = True
         for plt in reversed(drawn_plots[1:]):
@@ -344,11 +352,11 @@ class Plots:
     def set_title(self, title):
         self.__title = title
 
-def create_stack(hists, files, norms=None, adjustlimits=True, limits=None, logplot=False, normalized=True, 
-        title=''):
+def create_stack(hists, files, norms=None, adjustlimits=True, limits=None,
+        ratio_limits=None, logplot=False, normalized=True, title=''):
     # l.SetNColumns(min(len(files), 3 if not mc_cmp else 4))
 
-    stack = Plots(logplot=logplot, limits=limits)
+    stack = Plots(logplot=logplot, limits=limits, ratio_limits=ratio_limits)
 
     for (h, f, n) in zip(hists, files, norms):
         if normalized:
@@ -400,6 +408,7 @@ pileup = {
     '66': 'PU66',
     '45': 'PU45',
     '2012C': '2012C',
+    '2012Cre': '2012C re-RECO',
     '2012CnoE': '2012C',
     '2012CnoH': '2012C',
     '2012Cext': '2012C 200ns',
@@ -615,7 +624,10 @@ def summarize(pdffile, files):
             for p in collect_paths(files, basepath):
                 obj = r.gDirectory.Get(p + "/" + key)
                 if 'gctplotter' in basepath.lower():
-                    obj = rescale_histo(obj, .5)
+                    try:
+                        obj = rescale_histo(obj, .5)
+                    except Exception, e:
+                        print e
                 if not obj:
                     sys.stderr.write("Can't find: {p}/{k}\n".format(p=path, k=key))
                     continue
@@ -633,7 +645,8 @@ def summarize(pdffile, files):
             if not isinstance(hists[0], r.TH2):
                 s = create_stack(hists, legends, norms,
                         normalized=not isinstance(hists[0], r.TProfile),
-                        limits=override_limits[key] if key in override_limits else None)
+                        limits=override_limits[key] if key in override_limits else None,
+                        ratio_limits=override_ratio_limits[basepath] if basepath in override_ratio_limits else None)
                 if mode & REGPLOT:
                     plot_stacks([s], pdffile.format(p=key, d=basepath.lower()))
                 if mode & LOGPLOT:
@@ -672,7 +685,8 @@ def summarize(pdffile, files):
                             nhists.append(h)
 
                         s = create_stack(nhists, legends, norms, normalized=False,
-                                limits=override_limits[key] if key in override_limits else None)
+                                limits=override_limits[key] if key in override_limits else None,
+                                ratio_limits=override_ratio_limits[basepath] if basepath in override_ratio_limits else None)
                         if mode & REGPLOT:
                             plot_stacks([s], pdffile.format(p=key + "_" + axis + "_mp", d=basepath.lower()))
                         if mode & LOGPLOT:
@@ -682,7 +696,8 @@ def summarize(pdffile, files):
                 for (axis, proj) in projs.items():
                     phists = map(proj, hists)
                     s = create_stack(phists, legends, norms, normalized=True,
-                            limits=override_limits[key] if key in override_limits else None)
+                            limits=override_limits[key] if key in override_limits else None,
+                            ratio_limits=override_ratio_limits[basepath] if basepath in override_ratio_limits else None)
                     if mode & REGPLOT:
                         plot_stacks([s], pdffile.format(p=key + "_" + axis, d=basepath.lower()))
                     if mode & LOGPLOT:
