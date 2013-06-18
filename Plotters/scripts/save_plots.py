@@ -408,6 +408,9 @@ pileup = {
     '2012Cext2': '2012C 300ns',
     '2012Cext2noE': '2012C 300ns',
     '2012Cext2noH': '2012C 300ns',
+    '2012Cext3': '2012C 300ns (new)',
+    '2012Cext3noE': '2012C 300ns (new)',
+    '2012Cext3noH': '2012C 300ns (new)',
     '2012Chf': '2012C mod HF',
     'front': '2012C front',
     'back': '2012C back'

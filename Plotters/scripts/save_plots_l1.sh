@@ -38,17 +38,17 @@ for d in $dirs; do
          $(ls plots_{data,mc}_*reco-${p}*.root|grep -v no) &
       if [ $p == "2012C" ]; then
          save_plots.py reemulated=n reweighed=y unweighed=y plot_only="$d\$" "cmp/{d}/reco${p}noE_{p}.eps" \
-            $(ls -U plots_data_*reco-${p}noE.root plots_mc_*reco-${p}{,ext,ext2}noE.root) &
+            $(ls -U plots_data_*reco-${p}noE.root plots_mc_*reco-${p}{,ext2,ext3}noE.root) &
          save_plots.py reemulated=n reweighed=y unweighed=n plot_only="$d\$" "cmp/{d}.reweigh/reco${p}noE_{p}.eps" \
-            $(ls -U plots_data_*reco-${p}noE.root plots_mc_*reco-${p}{,ext,ext2}noE.root) &
+            $(ls -U plots_data_*reco-${p}noE.root plots_mc_*reco-${p}{,ext2,ext3}noE.root) &
          save_plots.py reemulated=y reweighed=y unweighed=n unemulated=n plot_only="$d\$" "cmp/{d}.reemul/reco${p}noE_{p}.eps" \
-            $(ls -U plots_data_*reco-${p}noE.root plots_mc_*reco-${p}{,ext,ext2}noE.root) &
+            $(ls -U plots_data_*reco-${p}noE.root plots_mc_*reco-${p}{,ext2,ext3}noE.root) &
          save_plots.py reemulated=n reweighed=y unweighed=y plot_only="$d\$" "cmp/{d}/reco${p}noH_{p}.eps" \
-            $(ls -U plots_data_*reco-${p}noH.root plots_mc_*reco-${p}{,ext,ext2}noH.root) &
+            $(ls -U plots_data_*reco-${p}noH.root plots_mc_*reco-${p}{,ext2,ext3}noH.root) &
          save_plots.py reemulated=n reweighed=y unweighed=n plot_only="$d\$" "cmp/{d}.reweigh/reco${p}noH_{p}.eps" \
-            $(ls -U plots_data_*reco-${p}noH.root plots_mc_*reco-${p}{,ext,ext2}noH.root) &
+            $(ls -U plots_data_*reco-${p}noH.root plots_mc_*reco-${p}{,ext2,ext3}noH.root) &
          save_plots.py reemulated=y reweighed=y unweighed=n unemulated=n plot_only="$d\$" "cmp/{d}.reemul/reco${p}noH_{p}.eps" \
-            $(ls -U plots_data_*reco-${p}noH.root plots_mc_*reco-${p}{,ext,ext2}noH.root) &
+            $(ls -U plots_data_*reco-${p}noH.root plots_mc_*reco-${p}{,ext2,ext3}noH.root) &
       fi
    done
 done

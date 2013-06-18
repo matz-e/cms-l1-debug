@@ -28,10 +28,12 @@ for d in $dirs; do
 
    save_plots.py unweighed=n plot_only="$d\$" "cmp/{d}/recoAll_{p}.eps" \
       plots_{data,mc}_raw+reco-{2012C,45,66}.root &
-   save_plots.py unweighed=n plot_only="$d\$" "cmp/{d}/recoAllDir_{p}.eps" \
-      plots_{data,mc}_raw+reco-{2012C,front,back}.root &
-   save_plots.py unweighed=n plot_only="$d\$" "cmp/{d}/recoAllDir2012C_{p}.eps" \
-      plots_{data,mc}_*reco-{2012C,front,back}*.root &
+   # save_plots.py unweighed=n plot_only="$d\$" "cmp/{d}/recoAllDir_{p}.eps" \
+      # plots_{data,mc}_raw+reco-{2012C,front,back}.root &
+   # save_plots.py unweighed=n plot_only="$d\$" "cmp/{d}/recoAllDir2012C_{p}.eps" \
+      # plots_{data,mc}_*reco-{2012C,front,back}*.root &
+   save_plots.py unweighed=n plot_only="$d\$" "cmp/{d}/recoAll2012C_{p}.eps" \
+      plots_{data,mc}_*reco-2012C{,ext2,ext3}.root &
    for p in $pus; do
       save_plots.py unweighed=n plot_only="$d\$" "cmp/{d}/reco${p}_{p}.eps" \
          plots_{data,mc}_*reco-${p}*.root &
