@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import math
 import random
 import ROOT as r
 import sys
@@ -17,6 +18,9 @@ def filter_histo(h, fct):
     for (i, (n, l)) in enumerate(labels, 1):
         new_h.GetXaxis().SetBinLabel(i, l)
         new_h.SetBinContent(i, h.GetBinContent(n))
+        new_h.SetBinError(i, h.GetBinError(n))
+
+    new_h.SetTitle(";;MC / Data")
 
     return new_h
 
@@ -40,6 +44,10 @@ def hist_ratio(p1, p2, filter, key):
     print h2.GetXaxis().GetBinLabel(i), h2.GetBinContent(i)
     print h1.GetXaxis().GetBinLabel(bin), h1.GetBinContent(bin)
     print h2.GetXaxis().GetBinLabel(bin), h2.GetBinContent(bin)
+
+    for i in range(1, h1.GetNbinsX() + 1):
+        h1.SetBinError(i, math.sqrt(h1.GetBinContent(i)))
+        h2.SetBinError(i, math.sqrt(h2.GetBinContent(i)))
 
     h1.Scale(1 / h1.GetBinContent(bin))
     h2.Scale(1 / h2.GetBinContent(bin))
@@ -66,27 +74,42 @@ def plot_ratios(filename, files, data_path, mc_path, filter, logscale=False, key
     r.gPad.SetGrid()
     r.gPad.SetBottomMargin(.4)
     r.gPad.SetRightMargin(.025)
-    r.gPad.SetLeftMargin(.025)
+    r.gPad.SetLeftMargin(.05)
 
     hs[0].SetTitle("")
     if not logscale:
         hs[0].GetYaxis().SetRangeUser(0, 10)
     hs[0].GetXaxis().SetTitle("")
     hs[0].GetYaxis().SetTitle("MC / Data")
+    canvas.Range(0, 0, 1, 10)
 
-    opt = 'bar2'
-    for (h, c, t) in zip(hs, [r.kGreen + 3, r.kRed, r.kRed + 2, r.kBlue + 1, r.kBlue + 3], ts):
+    ls = []
+    rng = range(len(hs))
+    mid = rng[-1] * 0.5
+    opt = ''
+    for (h, c, t, n) in zip(hs, [r.kGreen + 3, r.kRed, r.kRed + 2, r.kBlue + 1, r.kBlue + 3], ts, rng):
         h.SetFillColor(c)
         h.SetBarWidth(width)
         h.SetBarOffset(offset)
-        h.Draw(opt)
+        h.SetYTitle("MC / Data")
+        h.GetXaxis().LabelsOption("v")
+        # h.GetXaxis().SetLabelSize(2 * h.GetXaxis().GetLabelSize())
+        h.Draw('hist bar2' + opt)
         legend.AddEntry(h, t, "f")
+
+        for bin in range(h.GetNbinsX() + 1):
+            x = h.GetXaxis().GetBinCenter(bin) + (n - mid) * h.GetBinWidth(bin) / len(rng) * 0.9
+            y = h.GetBinContent(bin)
+            err = h.GetBinError(bin)
+
+            l = r.TLine(x, min(y - err, 10), x, min(y + err, 10))
+            l.Draw()
+            ls.append(l)
 
         offset += 5 * dx
         if 'same' not in opt:
             opt += 'same'
 
-    canvas.Range(0, 0, 1, 10)
     line = r.TLine(0, 1, 1, 1)
     line.SetLineWidth(1)
     line.Draw()
