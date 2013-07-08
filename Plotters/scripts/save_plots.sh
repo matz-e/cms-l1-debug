@@ -21,24 +21,23 @@ calotowerplotter05
 EOF
 )
 
-[ -z "$pus" ] && pus="2012C 45 66 front back"
+[ -z "$pus" ] && pus="2012C" # 45 66 front back
 
 for d in $dirs; do
    while [ $(jobs|wc -l) -ge 10 ]; do
       sleep .1
    done
 
-   save_plots.py reemulated=n reweighed=n unweighed=y plot_only="$d\$" "cmp/{d}/recoVLPU_{p}.eps" \
-      plots_{data,mc}_*reco-none*.root &
-
-   save_plots.py unweighed=n plot_only="$d\$" "cmp/{d}/recoAll_{p}.eps" \
-      plots_{data,mc}_raw+reco-{2012C,45,66}.root &
+   # save_plots.py reemulated=n reweighed=n unweighed=y plot_only="$d\$" "cmp/{d}/recoVLPU_{p}.eps" \
+      # plots_{data,mc}_*reco-none*.root &
+   # save_plots.py unweighed=n plot_only="$d\$" "cmp/{d}/recoAll_{p}.eps" \
+      # plots_{data,mc}_*reco-{2012C,2012Cre,45,66}.root &
    # save_plots.py unweighed=n plot_only="$d\$" "cmp/{d}/recoAllDir_{p}.eps" \
       # plots_{data,mc}_raw+reco-{2012C,front,back}.root &
    # save_plots.py unweighed=n plot_only="$d\$" "cmp/{d}/recoAllDir2012C_{p}.eps" \
       # plots_{data,mc}_*reco-{2012C,front,back}*.root &
    save_plots.py unweighed=n plot_only="$d\$" "cmp/{d}/recoAll2012C_{p}.eps" \
-      plots_{data,mc}_*reco-2012C{,ext2,ext3}.root &
+      $(ls plots_{data,mc}_*reco-${p}*.root|grep -v no) &
    for p in $pus; do
       save_plots.py unweighed=n plot_only="$d\$" "cmp/{d}/reco${p}_{p}.eps" \
          plots_{data,mc}_*reco-${p}*.root &

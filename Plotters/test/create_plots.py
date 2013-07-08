@@ -38,6 +38,7 @@ minbias = False
 zerobias = False
 trainback = False
 trainfront = False
+cleanhcal = False
 
 ifile = 'please set me'
 ofile = 'please set me'
@@ -244,6 +245,13 @@ if raw and reemul:
         process.rctReEmulDigis.useEcal = cms.bool(False)
     if not use_hcal:
         process.rctReEmulDigis.useHcal = cms.bool(False)
+    if cleanhcal:
+        process.load('Debug.Plotters.HcalTrigPrimDigiCleaner_cfi')
+        process.hcalTPDCleaner.input = cms.InputTag("hcalReEmulDigis")
+        process.hcalTPDCleaner.threshold = cms.untracked.double(0.35)
+        process.q *= process.hcalTPDCleaner
+
+        process.rctReEmulDigis.hcalDigis = cms.VInputTag(cms.InputTag("hcalTPDCleaner"))
 
 if do_reco:
     process.q *= process.reconstruction

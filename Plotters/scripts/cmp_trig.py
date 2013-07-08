@@ -127,21 +127,23 @@ files_noE = [
         ("plots_data_raw+reco-2012CnoE.root", "plots_mc_raw+reco-2012CnoE.root", "2012C"),
         # ("plots_data_raw+reco-2012CnoE.root", "plots_mc_raw+reco-2012CextnoE.root", "2012C 200ns"),
         ("plots_data_raw+reco-2012CnoE.root", "plots_mc_raw+reco-2012Cext2noE.root", "2012C 300ns"),
-        ("plots_data_raw+reco-2012CnoE.root", "plots_mc_raw+reco-2012Cext3noE.root", "2012C 300ns (new)"),
+        ("plots_data_raw+reco-2012CnoE.root", "plots_mc_raw+reco-2012Cext3noE.root", "2012C 300ns (new noise model)"),
         ]
 
 files_noH = [
         ("plots_data_raw+reco-2012CnoH.root", "plots_mc_raw+reco-2012CnoH.root", "2012C"),
         # ("plots_data_raw+reco-2012CnoH.root", "plots_mc_raw+reco-2012CextnoH.root", "2012C 200ns"),
         ("plots_data_raw+reco-2012CnoH.root", "plots_mc_raw+reco-2012Cext2noH.root", "2012C 300ns"),
-        ("plots_data_raw+reco-2012CnoH.root", "plots_mc_raw+reco-2012Cext3noH.root", "2012C 300ns (new)"),
+        ("plots_data_raw+reco-2012CnoH.root", "plots_mc_raw+reco-2012Cext3noH.root", "2012C 300ns (new noise model)"),
+        ("plots_data_raw+reco-2012C.root", "plots_mc_raw+reco-2012Cext3_clean.root", "2012C 300ns (new noise model, cleaned)"),
         ]
 
 files = [
         ("plots_data_raw+reco-2012C.root", "plots_mc_raw+reco-2012C.root", "2012C"),
         # ("plots_data_raw+reco-2012C.root", "plots_mc_raw+reco-2012Cext.root", "2012C 200ns"),
         ("plots_data_raw+reco-2012C.root", "plots_mc_raw+reco-2012Cext2.root", "2012C 300ns"),
-        ("plots_data_raw+reco-2012C.root", "plots_mc_raw+reco-2012Cext3.root", "2012C 300ns (new)"),
+        ("plots_data_raw+reco-2012C.root", "plots_mc_raw+reco-2012Cext3.root", "2012C 300ns (new noise model)"),
+        ("plots_data_raw+reco-2012C.root", "plots_mc_raw+reco-2012Cext3_clean.root", "2012C 300ns (new noise model, cleaned)"),
         # ("plots_data_raw+reco-45.root", "plots_mc_raw+reco-45.root", "PU 45"),
         # ("plots_data_raw+reco-66.root", "plots_mc_raw+reco-66.root", "PU 66"),
         ]
