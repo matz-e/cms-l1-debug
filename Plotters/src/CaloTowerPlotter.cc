@@ -243,7 +243,7 @@ CaloTowerPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    double et_tot_f_had = 0.;
 
    for (const auto& t: *(towers.product())) {
-      if (t.energy() < cut_)
+      if (t.et() < cut_)
          continue;
 
       et_tot += t.et();
