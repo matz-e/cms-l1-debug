@@ -24,6 +24,7 @@ runera = ''
 do_reco = False
 use_ecal = True
 use_hcal = True
+tpd_thres = 0.5
 
 alt = False # alternative dataset
 aod = False
@@ -262,7 +263,7 @@ if raw and reemul:
     if cleanhcal:
         process.load('Debug.Plotters.HcalTrigPrimDigiCleaner_cfi')
         process.hcalTPDCleaner.input = cms.InputTag("hcalReEmulDigis")
-        process.hcalTPDCleaner.threshold = cms.untracked.double(0.5)
+        process.hcalTPDCleaner.threshold = cms.untracked.double(tpd_thres)
         process.rctReEmulDigis.hcalDigis = cms.VInputTag(cms.InputTag('hcalTPDCleaner', ''))
 
         insert_before(process.HLTL1UnpackerSequence,
