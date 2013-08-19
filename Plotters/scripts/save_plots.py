@@ -39,6 +39,7 @@ import os.path
 import random
 import re
 import ROOT as r
+import yaml
 
 r.gROOT.SetBatch()
 r.gROOT.SetStyle('Modern')
@@ -62,7 +63,7 @@ class CustomLimits:
         return False
     def __getitem__(self, key):
         for (k, v) in self.__dict.items():
-            if k.search(key):
+            if k.search(key.lower()):
                 return v
         return None
 
@@ -301,7 +302,7 @@ class Plots:
             ymax = 1.55
             ymin = 0.45
         else:
-            ymax, ymin = self.__ratio_limits
+            ymin, ymax = self.__ratio_limits
 
         first = True
         for plt in reversed(drawn_plots[1:]):
@@ -412,6 +413,8 @@ pileup = {
     '2012Cre': '2012C re-RECO',
     '2012CnoE': '2012C',
     '2012CnoE_clean': '2012C (clean)',
+    '2012CnoE_clean05': '2012C (clean 0.5)',
+    '2012CnoE_clean25': '2012C (clean 2.5)',
     '2012CnoH': '2012C',
     '2012Cext': '2012C 200ns',
     '2012CextnoE': '2012C 200ns',
@@ -421,8 +424,12 @@ pileup = {
     '2012Cext2noH': '2012C 300ns',
     '2012Cext3': '2012C 300ns (new)',
     '2012Cext3_clean': '2012C 300ns (new, clean)',
+    '2012Cext3_clean05': '2012C 300ns (new, clean 0.5)',
+    '2012Cext3_clean25': '2012C 300ns (new, clean 2.5)',
     '2012Cext3noE': '2012C 300ns (new)',
     '2012Cext3noE_clean': '2012C 300ns (new, clean)',
+    '2012Cext3noE_clean05': '2012C 300ns (new, clean 0.5)',
+    '2012Cext3noE_clean25': '2012C 300ns (new, clean 2.5)',
     '2012Cext3noH': '2012C 300ns (new)',
     '2012Chf': '2012C mod HF',
     'front': '2012C front',
@@ -450,7 +457,7 @@ def legend(path, hist):
         hist.GetXaxis().SetTitle(
                 hist.GetXaxis().GetTitle().replace("E", "E_{T}"))
 
-    m = re.search(r'plots_([a-zA-Z0-9]+)(?:_([^_]+))?_(?:([a-zA-Z0-9+]+)-)(\w+).root$', f)
+    m = re.search(r'plots_([a-zA-Z0-9]+)(?:_([^_]+))?_([a-zA-Z0-9+]+)-(\w+).root$', f)
     if m:
         (label, mod, tier, pu) = m.groups()
         if label == 'mc':
@@ -545,21 +552,6 @@ def get_num_events(fn):
     if c != 0:
         return (c, c_rw)
 
-def collect_paths(files, path):
-    paths = []
-    for fn in files:
-        if unemulated:
-            if unweighed or '_data_' in fn.lower():
-                paths.append(fn + ':/' + path)
-            if reweighed and '_mc_' in fn.lower():
-                paths.append(fn + ':/reWeighted' + path[0].upper() + path[1:])
-        if reemulated:
-            if unweighed or '_data_' in fn.lower():
-                paths.append(fn + ':/reEmul' + path[0].upper() + path[1:])
-            if reweighed and '_mc_' in fn.lower():
-                paths.append(fn + ':/reWeightedReEmul' + path[0].upper() + path[1:])
-    return paths
-
 def which_plots(filename):
     """Returns whether regular and logplots should be done.
 
@@ -591,7 +583,7 @@ projs = {'ieta': FixedProj(r.TH2.ProjectionX),
 
 def rescale_histo(obj, fctr):
     nobj = r.TH1D(obj.GetName() + "_rs" + str(random.randrange(1, 10000000)),
-            obj.GetTitle(),
+            obj.GetTitle() + ";" + obj.GetXaxis().GetTitle() + ";" + obj.GetYaxis().GetTitle(),
             obj.GetNbinsX(),
             obj.GetXaxis().GetXmin(),
             obj.GetXaxis().GetXmax() * fctr)
@@ -599,118 +591,113 @@ def rescale_histo(obj, fctr):
         nobj.SetBinContent(n + 1, obj.GetBinContent(n + 1))
     return nobj
 
-def summarize(pdffile, files):
-    handles = [r.TFile(fn) for fn in files]
+def plot_directory(pattern, basepath, files):
+    files = [(r.TFile(fn), fn, paths) for (fn, paths) in files]
 
-    for fn in files:
+    for (file, fn, paths) in files:
         counts[fn] = get_num_events(fn)
 
-    for d in handles[0].GetListOfKeys():
-        dir = d.ReadObj()
-        path = dir.GetPath()
-        basepath = path.split(':/', 1)[1]
+    (file, basefile, paths) = files[0]
+    basedir = file.Get(paths[basepath])
+    for k in basedir.GetListOfKeys():
+        key = k.GetName()
 
-        # Skip directories that are secondary
-        if 'reemul' in path.lower() or 'reweigh' in path.lower():
+        mode = which_plots(pattern.format(d=basepath.lower(), p=key))
+        if mode == NOPLOT:
             continue
 
-        if not re.match(plot_only, basepath.lower(), re.IGNORECASE):
+        hists, legends, norms = [], [], []
+        for (file, fn, paths) in files:
+            obj = file.Get(paths[basepath] + "/" + key)
+            if not obj:
+                sys.stderr.write("Can't find: {p}/{k}\n".format(p=basepath, k=key))
+                continue
+            if 'gctplotter' in basepath.lower():
+                obj = rescale_histo(obj, .5)
+            l, n, b, o = legend(fn + ':' + basepath, obj)
+            norms.append(n)
+            hists.append(o)
+            legends.append(l)
+
+        # trigger stuff is dealt with in `cmp_trig.py`
+        if key == 'trig_bits':
             continue
 
-        for k in dir.GetListOfKeys():
-            key = k.GetName()
+        if len(hists) == 0:
+            sys.stderr.write("No histograms for: {p}/{k}\n".format(p=path, k=key))
+            continue
 
-            mode = which_plots(pdffile.format(d=basepath.lower(), p=key))
-            if mode == NOPLOT:
-                continue
-
-            hists, legends, norms = [], [], []
-            for p in collect_paths(files, basepath):
-                obj = r.gDirectory.Get(p + "/" + key)
-                if 'gctplotter' in basepath.lower():
-                    try:
-                        obj = rescale_histo(obj, .5)
-                    except Exception, e:
-                        print e
-                if not obj:
-                    sys.stderr.write("Can't find: {p}/{k}\n".format(p=path, k=key))
-                    continue
-                l, n, b, o = legend(p, obj)
-                norms.append(n)
-                hists.append(o)
-                legends.append(l)
-
-            if key == 'trig_bits':
-                continue
-
-            if len(hists) == 0:
-                continue
-
-            if not isinstance(hists[0], r.TH2):
-                s = create_stack(hists, legends, norms,
-                        normalized=not isinstance(hists[0], r.TProfile),
-                        limits=override_limits[key] if key in override_limits else None,
-                        ratio_limits=override_ratio_limits[basepath] if basepath in override_ratio_limits else None)
-                if mode & REGPLOT:
-                    plot_stacks([s], pdffile.format(p=key, d=basepath.lower()))
-                if mode & LOGPLOT:
-                    s.set_logplot(True)
-                    plot_stacks([s], pdffile.format(p=key + "_log", d=basepath.lower()))
-            else:
-                if not basepath.endswith("_mp"):
-                    newbase = "_".join([basepath.rsplit("_", 1)[0], "mp"])
-                    norm_hists = []
-                    for p in collect_paths(files, newbase):
-                        obj = r.gDirectory.Get(p + "/" + key)
-                        if not obj:
-                            sys.stderr.write("Can't find: {p}/{k}\n".format(p=path, k=key))
-                            continue
-                        norm_hists.append(obj)
-
-                    for (axis, proj) in projs.items():
-                        if 'calo' in basepath.lower():
-                            quant = 'Region'
-                        elif 'digi' in basepath.lower() or 'trigprim' in basepath.lower():
-                            quant = 'Digi'
-                        elif 'jet' in basepath.lower():
-                            quant = 'Jet'
-                        elif 'rechit' in basepath.lower():
-                            quant = 'RecHit'
-                        elif 'track' in basepath.lower():
-                            quant = 'Track'
-                        else:
-                            sys.stderr.write('Please add a quantity assignment for "{k}"\n.'.format(k=basepath))
-                            raise
-
-                        nhists = []
-                        for (h, n) in zip(map(proj, hists), map(proj, norm_hists)):
-                            h.Divide(n)
-                            h.SetYTitle(val.GetZaxis().GetTitle() + ' / ' + quant)
-                            nhists.append(h)
-
-                        s = create_stack(nhists, legends, norms, normalized=False,
-                                limits=override_limits[key] if key in override_limits else None,
-                                ratio_limits=override_ratio_limits[basepath] if basepath in override_ratio_limits else None)
-                        if mode & REGPLOT:
-                            plot_stacks([s], pdffile.format(p=key + "_" + axis + "_mp", d=basepath.lower()))
-                        if mode & LOGPLOT:
-                            s.set_logplot(True)
-                            plot_stacks([s], pdffile.format(p=key + "_" + axis + "_mp_log", d=basepath.lower()))
+        if not isinstance(hists[0], r.TH2):
+            s = create_stack(hists, legends, norms,
+                    normalized=not isinstance(hists[0], r.TProfile),
+                    limits=override_limits[key] if key in override_limits else None,
+                    ratio_limits=override_ratio_limits[basepath] if basepath in override_ratio_limits else None)
+            if mode & REGPLOT:
+                plot_stacks([s], pattern.format(p=key, d=basepath.lower()))
+            if mode & LOGPLOT:
+                s.set_logplot(True)
+                plot_stacks([s], pattern.format(p=key + "_log", d=basepath.lower()))
+        else:
+            if not key.endswith("_mp"):
+                newkey = "_".join([key.rsplit("_", 1)[0], "mp"])
+                norm_hists = []
+                for (file, fn, paths) in files:
+                    obj = file.Get(paths[basepath] + "/" + newkey)
+                    if not obj:
+                        sys.stderr.write("Can't find: {p}/{k}\n".format(p=basepath, k=key))
+                        continue
+                    norm_hists.append(obj)
 
                 for (axis, proj) in projs.items():
-                    phists = map(proj, hists)
-                    s = create_stack(phists, legends, norms, normalized=True,
+                    if 'calo' in basepath.lower() or basepath == 'cr':
+                        quant = 'Region'
+                    elif 'digi' in basepath.lower() or 'trigprim' in basepath.lower() or basepath == 'tpd':
+                        quant = 'Digi'
+                    elif 'jet' in basepath.lower():
+                        quant = 'Jet'
+                    elif 'rechit' in basepath.lower():
+                        quant = 'RecHit'
+                    elif 'track' in basepath.lower():
+                        quant = 'Track'
+                    else:
+                        sys.stderr.write('Please add a quantity assignment for "{k}"\n.'.format(k=basepath))
+                        raise
+
+                    nhists = []
+                    for (h, n) in zip(map(proj, hists), map(proj, norm_hists)):
+                        h.Divide(n)
+                        # h.SetYTitle(val.GetZaxis().GetTitle() + ' / ' + quant)
+                        nhists.append(h)
+
+                    s = create_stack(nhists, legends, norms, normalized=False,
                             limits=override_limits[key] if key in override_limits else None,
                             ratio_limits=override_ratio_limits[basepath] if basepath in override_ratio_limits else None)
                     if mode & REGPLOT:
-                        plot_stacks([s], pdffile.format(p=key + "_" + axis, d=basepath.lower()))
+                        plot_stacks([s], pattern.format(p=key + "_" + axis + "_mp", d=basepath.lower()))
                     if mode & LOGPLOT:
                         s.set_logplot(True)
-                        plot_stacks([s], pdffile.format(p=key + "_" + axis + "_log", d=basepath.lower()))
+                        plot_stacks([s], pattern.format(p=key + "_" + axis + "_mp_log", d=basepath.lower()))
 
-if len(new_args) < 2:
-    sys.stderr.write(
-            "usage: {p} output file...\n".format(p=sys.argv[0]))
-    sys.exit(1)
+            for (axis, proj) in projs.items():
+                phists = map(proj, hists)
+                s = create_stack(phists, legends, norms, normalized=True,
+                        limits=override_limits[key] if key in override_limits else None,
+                        ratio_limits=override_ratio_limits[basepath] if basepath in override_ratio_limits else None)
+                if mode & REGPLOT:
+                    plot_stacks([s], pattern.format(p=key + "_" + axis, d=basepath.lower()))
+                if mode & LOGPLOT:
+                    s.set_logplot(True)
+                    plot_stacks([s], pattern.format(p=key + "_" + axis + "_log", d=basepath.lower()))
 
-summarize(new_args[0], new_args[1:])
+# if len(new_args) < 2:
+    # sys.stderr.write(
+            # "usage: {p} output file...\n".format(p=sys.argv[0]))
+    # sys.exit(1)
+
+# summarize(new_args[0], new_args[1:])
+
+config = yaml.load(open(sys.argv[1]))
+
+files = [hash.items()[0] for hash in config['files']]
+for p in config['paths']:
+    plot_directory(config['output pattern'], p, files)
