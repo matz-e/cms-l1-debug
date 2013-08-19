@@ -72,6 +72,19 @@ if ofile == 'please set me':
 mc = not data
 reemul = reemul or (mc and raw)
 
+def insert_before(sequence, module, reference):
+    """Insert a module in front of a reference one, recursively digging
+    into sequences.  Hackish, as CMSSW does not seem to offer such a
+    function (or documentation thereof)."""
+    try:
+        idx = sequence.index(reference)
+        sequence.insert(idx, module)
+    except ValueError:
+        for item in sequence._seq._collection:
+            if isinstance(item, cms.Sequence):
+                if insert_before(item, module, reference):
+                    return
+
 import FWCore.ParameterSet.Config as cms
 
 process = cms.Process('PlotPrep')
@@ -237,8 +250,9 @@ if raw and reemul:
     # process.l1extraParticles.centralJetSource = cms.InputTag('gctReEmulDigis', 'cenJets')
     # process.l1extraParticles.tauJetSource = cms.InputTag('gctReEmulDigis', 'tauJets')
 
-    process.q *= process.l1extraParticles \
-            * process.HLTL1UnpackerSequence \
+    process.q = cms.Path()
+    process.q *= process.HLTL1UnpackerSequence \
+            * process.l1extraParticles \
             * process.l1GtUnpack 
 
     if not use_ecal:
@@ -248,10 +262,11 @@ if raw and reemul:
     if cleanhcal:
         process.load('Debug.Plotters.HcalTrigPrimDigiCleaner_cfi')
         process.hcalTPDCleaner.input = cms.InputTag("hcalReEmulDigis")
-        process.hcalTPDCleaner.threshold = cms.untracked.double(0.35)
-        process.q *= process.hcalTPDCleaner
+        process.hcalTPDCleaner.threshold = cms.untracked.double(0.5)
+        process.rctReEmulDigis.hcalDigis = cms.VInputTag(cms.InputTag('hcalTPDCleaner', ''))
 
-        process.rctReEmulDigis.hcalDigis = cms.VInputTag(cms.InputTag("hcalTPDCleaner"))
+        insert_before(process.HLTL1UnpackerSequence,
+                process.hcalTPDCleaner, process.rctReEmulDigis)
 
 if do_reco:
     process.q *= process.reconstruction
@@ -334,6 +349,12 @@ if data:
     process.recHitPlotter05_0.timeShift = cms.untracked.double(-5.)
     process.recHitPlotter10_0.timeShift = cms.untracked.double(-5.)
     process.recHitPlotter20_0.timeShift = cms.untracked.double(-5.)
+
+if cleanhcal:
+    process.cleanTrigPrimPlotter = process.triggerPrimitiveDigiPlotter.clone()
+    process.cleanTrigPrimPlotter.ecalDigis = cms.InputTag('ecalDigis', 'EcalTriggerPrimitives')
+    process.cleanTrigPrimPlotter.hcalDigis = cms.InputTag('hcalTPDCleaner', '')
+    process.p *= process.cleanTrigPrimPlotter
 
 process.reEmulTrigPrimPlotter = process.triggerPrimitiveDigiPlotter.clone()
 process.reEmulTrigPrimPlotter.ecalDigis = cms.InputTag('ecalDigis', 'EcalTriggerPrimitives')
