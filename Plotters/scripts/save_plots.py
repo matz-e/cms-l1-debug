@@ -689,15 +689,8 @@ def plot_directory(pattern, basepath, files):
                     s.set_logplot(True)
                     plot_stacks([s], pattern.format(p=key + "_" + axis + "_log", d=basepath.lower()))
 
-# if len(new_args) < 2:
-    # sys.stderr.write(
-            # "usage: {p} output file...\n".format(p=sys.argv[0]))
-    # sys.exit(1)
+configs = yaml.load_all(open(sys.argv[1]))
 
-# summarize(new_args[0], new_args[1:])
-
-config = yaml.load(open(sys.argv[1]))
-
-files = [hash.items()[0] for hash in config['files']]
-for p in config['paths']:
-    plot_directory(config['output pattern'], p, files)
+for config in configs:
+    for p in config['paths']:
+        plot_directory(config['output pattern'], p, files)

@@ -12,9 +12,9 @@ paths:
 output pattern: "cmp/{d}/{p}.png"
 
 files:
-  - plots_data_raw+reco-2012CnoE.root: *data
-  - plots_data_raw+reco-2012CnoE_clean05.root: *data
-  - plots_data_raw+reco-2012CnoE_clean25.root: *data
-  - plots_mc_raw+reco-2012Cext3noE.root: *mc
-  - plots_mc_raw+reco-2012Cext3noE_clean05.root: *mc
-  - plots_mc_raw+reco-2012Cext3noE_clean25.root: *mc
+  - [plots_data_raw+reco-2012CnoE.root, *data]
+  - [plots_data_raw+reco-2012CnoE_clean05.root, *data]
+  - [plots_data_raw+reco-2012CnoE_clean25.root, *data]
+  - [plots_mc_raw+reco-2012Cext3noE.root, *mc]
+  - [plots_mc_raw+reco-2012Cext3noE_clean05.root, *mc]
+  - [plots_mc_raw+reco-2012Cext3noE_clean25.root, *mc]
