@@ -402,47 +402,12 @@ modifiers = {
     'hf': 'mod HF',
     '1pv': '1 PV'
 }
-pileup = {
-    'none': 'VLPU',
-    'nonehf': 'VLPU mod HF',
-    'nonehf2': 'VLPU mod HF (2)',
-    '66': 'PU66',
-    '45': 'PU45',
-    '2012C': '2012C',
-    '2012C_clean': '2012C (clean)',
-    '2012Cre': '2012C re-RECO',
-    '2012CnoE': '2012C',
-    '2012CnoE_clean': '2012C (clean)',
-    '2012CnoE_clean05': '2012C (clean 0.5)',
-    '2012CnoE_clean25': '2012C (clean 2.5)',
-    '2012CnoH': '2012C',
-    '2012Cext': '2012C 200ns',
-    '2012CextnoE': '2012C 200ns',
-    '2012CextnoH': '2012C 200ns',
-    '2012Cext2': '2012C 300ns',
-    '2012Cext2noE': '2012C 300ns',
-    '2012Cext2noH': '2012C 300ns',
-    '2012Cext3': '2012C 300ns (new)',
-    '2012Cext3_clean': '2012C 300ns (new, clean)',
-    '2012Cext3_clean05': '2012C 300ns (new, clean 0.5)',
-    '2012Cext3_clean25': '2012C 300ns (new, clean 2.5)',
-    '2012Cext3noE': '2012C 300ns (new)',
-    '2012Cext3noE_clean': '2012C 300ns (new, clean)',
-    '2012Cext3noE_clean05': '2012C 300ns (new, clean 0.5)',
-    '2012Cext3noE_clean25': '2012C 300ns (new, clean 2.5)',
-    '2012Cext3noH': '2012C 300ns (new)',
-    '2012Chf': '2012C mod HF',
-    'front': '2012C front',
-    'back': '2012C back'
-}
 
-data_colors = [1, 11, 12, 13, 14, 15, 16]
 data_files = []
 data_markers = [r.kFullDotLarge, r.kFullSquare, r.kFullTriangleUp, r.kFullTriangleDown]
-mc_colors = [2, 8, 9, 6, 7, 41, 46, 38, 2, 8, 9, 6, 7]
 mc_files = []
 
-def legend(path, hist):
+def fix_histo(path, hist):
     """
     Create and return a legend label, normalization, and modified histogram
     based on the latter's path.
@@ -466,8 +431,6 @@ def legend(path, hist):
                 mc_files.append(f)
             if isinstance(hist, r.TProfile):
                 hist.SetOption("PE")
-            hist.SetLineColor(mc_colors[mc_files.index(f)])
-            hist.SetMarkerColor(mc_colors[mc_files.index(f)])
             if 'reemul' in basedir and unemulated:
                 hist.SetMarkerStyle(r.kOpenDiamond)
             elif 'reweighted' in basedir and reweighed and unweighed:
@@ -483,8 +446,6 @@ def legend(path, hist):
                 # hist.SetOption("P")
             if f not in data_files:
                 data_files.append(f)
-            hist.SetLineColor(data_colors[data_files.index(f)])
-            hist.SetMarkerColor(data_colors[data_files.index(f)])
             hist.SetMarkerStyle(data_markers[data_files.index(f)])
             # if 'reemul' in basedir:
                 # hist.SetMarkerStyle(r.kFullTriangleUp)
@@ -494,37 +455,25 @@ def legend(path, hist):
         else:
             raise
 
-        label += ' ' + pileup[pu]
 
-        if mod:
-            label += ' {m}'.format(m=modifiers[mod] if mod in modifiers else mod)
     else:
         sys.stderr.write('filename does not match expected pattern: \
                 {f}\n'.format(f=f))
         raise
 
     if 'reemul' in basedir:
-        basedir = basedir.replace('reemul', '')
         if unemulated:
             hist.SetLineStyle(r.kDotted)
-        label += ' reemul.'
 
     if 'reweighted' in basedir:
-        basedir = basedir.replace('reweighted', '')
-        label += ' rw.'
         if reweighed and unweighed and unemulated:
             hist.SetLineStyle(r.kDashed)
 
     if 'reemul' in basedir and 'reweighted' in basedir and reweighed and unweighed and unemulated:
         hist.SetLineStyle(r.kDashDotted)
 
-    n = counts[f][0]
-    # Hack to get the right normalization for pileup histograms
-    if 'pileup' in f:
-        hist.Scale(1. / hist.Integral())
-        n = 1
 
-    return label, n, basedir, hist
+    return hist
 
 def get_num_events(fn):
     """
@@ -592,12 +541,13 @@ def rescale_histo(obj, fctr):
     return nobj
 
 def plot_directory(pattern, basepath, files):
-    files = [(r.TFile(fn), fn, paths) for (fn, paths) in files]
+    files = [[r.TFile(tpl[0])] + tpl for tpl in files]
 
-    for (file, fn, paths) in files:
+    counts = {}
+    for (file, fn, leg, col, paths) in files:
         counts[fn] = get_num_events(fn)
 
-    (file, basefile, paths) = files[0]
+    (file, basefile, leg, col, paths) = files[0]
     basedir = file.Get(paths[basepath])
     for k in basedir.GetListOfKeys():
         key = k.GetName()
@@ -607,17 +557,23 @@ def plot_directory(pattern, basepath, files):
             continue
 
         hists, legends, norms = [], [], []
-        for (file, fn, paths) in files:
+        for (file, fn, leg, col, paths) in files:
+            if basepath not in paths:
+                continue
+
             obj = file.Get(paths[basepath] + "/" + key)
             if not obj:
                 sys.stderr.write("Can't find: {p}/{k}\n".format(p=basepath, k=key))
                 continue
             if 'gctplotter' in basepath.lower():
                 obj = rescale_histo(obj, .5)
-            l, n, b, o = legend(fn + ':' + basepath, obj)
-            norms.append(n)
+            o = fix_histo(fn + ':' + basepath, obj)
+            o.SetMarkerColor(col)
+            o.SetLineColor(col)
+            # o.SetFillColor(col)
+            norms.append(counts[fn][0])
             hists.append(o)
-            legends.append(l)
+            legends.append(leg)
 
         # trigger stuff is dealt with in `cmp_trig.py`
         if key == 'trig_bits':
@@ -641,7 +597,10 @@ def plot_directory(pattern, basepath, files):
             if not key.endswith("_mp"):
                 newkey = "_".join([key.rsplit("_", 1)[0], "mp"])
                 norm_hists = []
-                for (file, fn, paths) in files:
+                for (file, fn, leg, col, paths) in files:
+                    if basepath not in paths:
+                        continue
+
                     obj = file.Get(paths[basepath] + "/" + newkey)
                     if not obj:
                         sys.stderr.write("Can't find: {p}/{k}\n".format(p=basepath, k=key))
@@ -655,7 +614,7 @@ def plot_directory(pattern, basepath, files):
                         quant = 'Digi'
                     elif 'jet' in basepath.lower():
                         quant = 'Jet'
-                    elif 'rechit' in basepath.lower():
+                    elif 'rechit' in basepath.lower() or 'rh' in basepath:
                         quant = 'RecHit'
                     elif 'track' in basepath.lower():
                         quant = 'Track'
@@ -689,8 +648,25 @@ def plot_directory(pattern, basepath, files):
                     s.set_logplot(True)
                     plot_stacks([s], pattern.format(p=key + "_" + axis + "_log", d=basepath.lower()))
 
+def get_color(o):
+    if isinstance(o, str):
+        for c in r.gROOT.GetListOfColors():
+            if c.GetName() == o:
+                return c.GetNumber()
+        # FIXME throw proper exception
+        sys.stderr.write(o + "\n")
+        raise
+    elif isinstance(o, int):
+        return o
+    else:
+        # FIXME throw proper exception
+        raise
+
 configs = yaml.load_all(open(sys.argv[1]))
 
 for config in configs:
+    # convert colors
+    for tpl in config['files']:
+        tpl[2] = get_color(tpl[2])
     for p in config['paths']:
-        plot_directory(config['output pattern'], p, files)
+        plot_directory(config['output pattern'], p, config['files'])
