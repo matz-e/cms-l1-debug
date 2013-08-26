@@ -13,8 +13,9 @@ find $* -name *.eps|while read file; do
    done
    (
       echo "converting $file..."
-      epstopdf "$file"
-      rm "$file"
+      epstopdf -o="${file%.eps}_tmp.pdf" "$file"
+      pdfcrop "${file%.eps}_tmp.pdf" "${file%eps}pdf"
+      rm "$file" "${file%.eps}_tmp.pdf"
    ) &
 done
 
