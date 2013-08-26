@@ -47,11 +47,13 @@ class HcalTrigPrimDigiCleaner : public edm::EDProducer {
    private:
       virtual void produce(edm::Event&, const edm::EventSetup&);
 
+      bool first_;
       double threshold_;
       edm::InputTag dirtytpds_;
 };
 
 HcalTrigPrimDigiCleaner::HcalTrigPrimDigiCleaner(const edm::ParameterSet& config) :
+   first_(true),
    threshold_(config.getUntrackedParameter<double>("threshold", -1000.)),
    dirtytpds_(config.getParameter<edm::InputTag>("input"))
 {
@@ -75,6 +77,12 @@ HcalTrigPrimDigiCleaner::produce(edm::Event& event, const edm::EventSetup& setup
    edm::ESHandle<L1RCTParameters> rct;
    setup.get<L1RCTParametersRcd>().get(rct);
    const L1RCTParameters* r = rct.product();
+
+   if (first_) {
+      h->print(std::cout);
+      r->print(std::cout);
+      first_ = false;
+   }
 
    Handle<HcalTrigPrimDigiCollection> digis;
    if (!event.getByLabel(dirtytpds_, digis)) {
