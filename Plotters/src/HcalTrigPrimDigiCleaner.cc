@@ -102,7 +102,7 @@ HcalTrigPrimDigiCleaner::produce(edm::Event& event, const edm::EventSetup& setup
          continue;
       }
 
-      float hcal = h->et(digi.SOI_compressedEt(), id.ieta(), id.zside());
+      float hcal = h->et(digi.SOI_compressedEt(), id.ietaAbs(), id.zside());
       float ecal = 0.;
       float et = r->JetMETTPGSum(ecal, hcal, id.ietaAbs());
 
