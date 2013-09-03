@@ -83,8 +83,10 @@ class ChainCmpPlotter : public edm::EDAnalyzer, BasePlotter {
       edm::InputTag rechits_;
       edm::InputTag towers_;
 
-      TH2D *regions_vs_rechits_;
-      TH2D *regions_vs_towers_;
+      TH2D *regions_vs_rechits_b_;
+      TH2D *regions_vs_towers_b_;
+      TH2D *regions_vs_rechits_e_;
+      TH2D *regions_vs_towers_e_;
 
       double cut_;
 };
@@ -99,10 +101,14 @@ ChainCmpPlotter::ChainCmpPlotter(const edm::ParameterSet& config) :
 {
    edm::Service<TFileService> fs;
 
-   regions_vs_rechits_ = fs->make<TH2D>("regions_vs_rechits",
-         "CaloRegions vs RecHits;Region E_{T};RecHit E_{T};Num", 750, 0, 750, 500, 0, 500);
-   regions_vs_towers_ = fs->make<TH2D>("regions_vs_towers",
-         "CaloRegions vs CaloTowers;Region E_{T};Tower E_{T};Num", 750, 0, 750, 500, 0, 500);
+   regions_vs_rechits_b_ = fs->make<TH2D>("regions_vs_rechits_b",
+         "CaloRegions vs RecHits (barrel);Region E_{T};RecHit E_{T};Num", 750, 0, 750, 500, 0, 500);
+   regions_vs_towers_b_ = fs->make<TH2D>("regions_vs_towers_b",
+         "CaloRegions vs CaloTowers (barrel);Region E_{T};Tower E_{T};Num", 750, 0, 750, 500, 0, 500);
+   regions_vs_rechits_e_ = fs->make<TH2D>("regions_vs_rechits_e",
+         "CaloRegions vs RecHits (endcap);Region E_{T};RecHit E_{T};Num", 750, 0, 750, 500, 0, 500);
+   regions_vs_towers_e_ = fs->make<TH2D>("regions_vs_towers_e",
+         "CaloRegions vs CaloTowers (endcap);Region E_{T};Tower E_{T};Num", 750, 0, 750, 500, 0, 500);
 }
 
 ChainCmpPlotter::~ChainCmpPlotter() {}
@@ -114,9 +120,12 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 
    double weight = this->weight(event);
 
-   double region_sum = 0.;
-   double rechit_sum = 0.;
-   double tower_sum = 0.;
+   double region_sum_b = 0.;
+   double rechit_sum_b = 0.;
+   double tower_sum_b = 0.;
+   double region_sum_e = 0.;
+   double rechit_sum_e = 0.;
+   double tower_sum_e = 0.;
 
    edm::Handle<L1CaloRegionCollection> regions;
    if (!event.getByLabel(regions_, regions)) {
@@ -134,8 +143,9 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       int ieta = r->gctEta();
 
       if ((ieta < 7 || ieta > 14) && !r->isHf()) {
-         std::cout << r->et() << std::endl;
-         region_sum += r->et();
+         region_sum_e += r->et();
+      } else if (ieta >= 7 && ieta <= 14) {
+         region_sum_b += r->et();
       }
    }
 
@@ -176,8 +186,10 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       if (et < cut_)
          continue;
 
-      if (id.subdet() == HcalEndcap)
-         rechit_sum += et;
+      if (id.subdet() == HcalBarrel)
+         rechit_sum_b += et;
+      else if (id.subdet() == HcalEndcap)
+         rechit_sum_e += et;
    }
 
    edm::Handle< edm::SortedCollection<CaloTower> > towers;
@@ -195,12 +207,16 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          continue;
 
 
-      if (t.ietaAbs() > 16 && t.ietaAbs() <= 28)
-         tower_sum += t.hadEt();
+      if (t.ietaAbs() <= 16)
+         tower_sum_b += t.hadEt();
+      else if (t.ietaAbs() <= 28)
+         tower_sum_e += t.hadEt();
    }
 
-   regions_vs_rechits_->Fill(region_sum, rechit_sum, weight);
-   regions_vs_towers_->Fill(region_sum, tower_sum, weight);
+   regions_vs_rechits_b_->Fill(region_sum_b, rechit_sum_b, weight);
+   regions_vs_towers_b_->Fill(region_sum_b, tower_sum_b, weight);
+   regions_vs_rechits_e_->Fill(region_sum_e, rechit_sum_e, weight);
+   regions_vs_towers_e_->Fill(region_sum_e, tower_sum_e, weight);
 }
 
 void
