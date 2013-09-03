@@ -16,6 +16,7 @@
 <use name="DataFormats/HcalDetId"/>
 <use name="DataFormats/HcalDigi"/>
 <use name="DataFormats/HcalRecHit"/>
+<use name="DataFormats/HepMCCandidate"/>
 <use name="DataFormats/L1CaloTrigger"/>
 <use name="DataFormats/L1GlobalCaloTrigger"/>
 <use name="DataFormats/L1GlobalTrigger"/>
