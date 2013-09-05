@@ -42,6 +42,7 @@ import ROOT as r
 import yaml
 
 r.gROOT.SetBatch()
+r.gErrorIgnoreLevel = 1001
 r.gROOT.SetStyle('Modern')
 
 r.gStyle.SetTitleBorderSize(0)
