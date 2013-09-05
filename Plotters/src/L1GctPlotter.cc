@@ -89,7 +89,7 @@ L1GctPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    } else {
       for (L1GctEtHadCollection::const_iterator et = et_hads->begin();
             et != et_hads->end(); ++et)
-         et_had_->Fill(et->et(), weight);
+         et_had_->Fill(et->et() * 0.5, weight);
    }
 
    Handle<L1GctEtMissCollection> et_misss;
@@ -99,7 +99,7 @@ L1GctPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    } else {
       for (L1GctEtMissCollection::const_iterator et = et_misss->begin();
             et != et_misss->end(); ++et)
-         et_miss_->Fill(et->et(), weight);
+         et_miss_->Fill(et->et() * 0.5, weight);
    }
 
    Handle<L1GctEtTotalCollection> et_tots;
@@ -109,7 +109,7 @@ L1GctPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    } else {
       for (L1GctEtTotalCollection::const_iterator et = et_tots->begin();
             et != et_tots->end(); ++et)
-         et_tot_->Fill(et->et(), weight);
+         et_tot_->Fill(et->et() * 0.5, weight);
    }
 }
 

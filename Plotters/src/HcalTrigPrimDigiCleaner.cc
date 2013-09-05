@@ -106,7 +106,9 @@ HcalTrigPrimDigiCleaner::produce(edm::Event& event, const edm::EventSetup& setup
       float ecal = 0.;
       float et = r->JetMETTPGSum(ecal, hcal, id.ietaAbs());
 
-      if (et >= threshold_)
+      // Trigger primitives and calo regions have energies measured in half
+      // GeV.
+      if (et * 0.5 >= threshold_)
          result->push_back(digi);
    }
 

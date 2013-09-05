@@ -536,16 +536,6 @@ class FixedProj:
 projs = {'ieta': FixedProj(r.TH2.ProjectionX),
          'iphi': FixedProj(r.TH2.ProjectionY)}
 
-def rescale_histo(obj, fctr):
-    nobj = r.TH1D(obj.GetName() + "_rs" + str(random.randrange(1, 10000000)),
-            obj.GetTitle() + ";" + obj.GetXaxis().GetTitle() + ";" + obj.GetYaxis().GetTitle(),
-            obj.GetNbinsX(),
-            obj.GetXaxis().GetXmin(),
-            obj.GetXaxis().GetXmax() * fctr)
-    for n in range(obj.GetNbinsX()):
-        nobj.SetBinContent(n + 1, obj.GetBinContent(n + 1))
-    return nobj
-
 def plot_directory(pattern, basepath, files):
     files = [[r.TFile(tpl[0])] + tpl for tpl in files]
 
@@ -571,8 +561,7 @@ def plot_directory(pattern, basepath, files):
             if not obj:
                 sys.stderr.write("Can't find {p}/{k} in {f}\n".format(p=basepath, k=key, f=fn))
                 continue
-            if 'gctplotter' in basepath.lower():
-                obj = rescale_histo(obj, .5)
+
             o = fix_histo(fn + ':' + basepath, obj)
             o.SetMarkerColor(col)
             o.SetLineColor(col)
