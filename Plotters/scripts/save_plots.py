@@ -569,7 +569,7 @@ def plot_directory(pattern, basepath, files):
 
             obj = file.Get(paths[basepath] + "/" + key)
             if not obj:
-                sys.stderr.write("Can't find: {p}/{k}\n".format(p=basepath, k=key))
+                sys.stderr.write("Can't find {p}/{k} in {f}\n".format(p=basepath, k=key, f=fn))
                 continue
             if 'gctplotter' in basepath.lower():
                 obj = rescale_histo(obj, .5)
@@ -609,7 +609,7 @@ def plot_directory(pattern, basepath, files):
 
                     obj = file.Get(paths[basepath] + "/" + newkey)
                     if not obj:
-                        sys.stderr.write("Can't find: {p}/{k}\n".format(p=basepath, k=key))
+                        sys.stderr.write("Can't find {p}/{k} in {f}\n".format(p=basepath, k=key, f=fn))
                         continue
                     norm_hists.append(obj)
 
