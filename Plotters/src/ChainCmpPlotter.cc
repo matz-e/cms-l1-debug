@@ -35,8 +35,15 @@
 
 #include "CondFormats/DataRecord/interface/EcalChannelStatusRcd.h"
 #include "CondFormats/DataRecord/interface/HcalChannelQualityRcd.h"
+#include "CondFormats/DataRecord/interface/L1CaloGeometryRecord.h"
 #include "CondFormats/EcalObjects/interface/EcalChannelStatus.h"
 #include "CondFormats/HcalObjects/interface/HcalChannelQuality.h"
+#include "CondFormats/L1TObjects/interface/L1CaloGeometry.h"
+
+#include "CondFormats/L1TObjects/interface/L1RCTParameters.h"
+#include "CondFormats/DataRecord/interface/L1RCTParametersRcd.h"
+#include "CondFormats/L1TObjects/interface/L1CaloHcalScale.h"
+#include "CondFormats/DataRecord/interface/L1CaloHcalScaleRcd.h"
 
 #include "DataFormats/Common/interface/SortedCollection.h"
 #include "DataFormats/CaloTowers/interface/CaloTower.h"
@@ -44,6 +51,7 @@
 #include "DataFormats/EcalDigi/interface/EcalTriggerPrimitiveDigi.h"
 #include "DataFormats/EcalDetId/interface/EcalSubdetector.h"
 #include "DataFormats/EcalDetId/interface/EcalTrigTowerDetId.h"
+#include "DataFormats/HcalDigi/interface/HcalDigiCollections.h"
 #include "DataFormats/HcalDigi/interface/HcalTriggerPrimitiveDigi.h"
 #include "DataFormats/HcalDetId/interface/HcalTrigTowerDetId.h"
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
@@ -54,6 +62,7 @@
 #include "Geometry/EcalAlgo/interface/EcalBarrelGeometry.h"
 #include "Geometry/EcalAlgo/interface/EcalEndcapGeometry.h"
 #include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
+#include "Geometry/HcalTowerAlgo/interface/HcalTrigTowerGeometry.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
 
 #include "RecoLocalCalo/HcalRecAlgos/interface/HcalSeverityLevelComputer.h"
@@ -79,6 +88,7 @@ class ChainCmpPlotter : public edm::EDAnalyzer, BasePlotter {
       virtual void analyze(const edm::Event&, const edm::EventSetup&);
 
       // ----------member data ---------------------------
+      edm::InputTag digis_;
       edm::InputTag regions_;
       edm::InputTag rechits_;
       edm::InputTag towers_;
@@ -89,15 +99,18 @@ class ChainCmpPlotter : public edm::EDAnalyzer, BasePlotter {
       TH2D *regions_vs_towers_e_;
 
       double cut_;
+      bool debug_;
 };
 
 ChainCmpPlotter::ChainCmpPlotter(const edm::ParameterSet& config) :
    edm::EDAnalyzer(),
    BasePlotter(config),
+   digis_(config.getParameter<edm::InputTag>("tpds")),
    regions_(config.getParameter<edm::InputTag>("regions")),
    rechits_(config.getParameter<edm::InputTag>("hits")),
    towers_(config.getParameter<edm::InputTag>("towers")),
-   cut_(config.getUntrackedParameter<double>("cut", -.1))
+   cut_(config.getUntrackedParameter<double>("cut", -.1)),
+   debug_(config.getUntrackedParameter<bool>("debug", false))
 {
    edm::Service<TFileService> fs;
 
@@ -127,6 +140,20 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    double rechit_sum_e = 0.;
    double tower_sum_e = 0.;
 
+   double tp_energies[22][18];
+   double l1_energies[22][18];
+   double rh_energies[22][18];
+   double ct_energies[22][18];
+
+   for (int i = 0; i < 22; ++i) {
+      for (int j = 0; j < 18; ++j) {
+         tp_energies[i][j] = 0.;
+         l1_energies[i][j] = 0.;
+         rh_energies[i][j] = 0.;
+         ct_energies[i][j] = 0.;
+      }
+   }
+
    edm::Handle<L1CaloRegionCollection> regions;
    if (!event.getByLabel(regions_, regions)) {
       LogError("CaloRegionPlotter") <<
@@ -135,17 +162,23 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       return;
    }
 
+   edm::ESHandle<L1CaloGeometry> l1_geo;
+   setup.get<L1CaloGeometryRecord>().get(l1_geo);
+
    for (L1CaloRegionCollection::const_iterator r = regions->begin();
          r != regions->end(); ++r) {
-      if (r->et() < cut_ * 2)
-         continue;
+      double et = r->et() * 0.5;
 
       int ieta = r->gctEta();
+      l1_energies[ieta][r->gctPhi()] += et;
+
+      if (et < cut_)
+         continue;
 
       if ((ieta < 7 || ieta > 14) && !r->isHf()) {
-         region_sum_e += r->et();
+         region_sum_e += et;
       } else if (ieta >= 7 && ieta <= 14) {
-         region_sum_b += r->et();
+         region_sum_b += et;
       }
    }
 
@@ -173,12 +206,23 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 
    for (auto hit = hits->begin(); hit != hits->end(); ++hit) {
       HcalDetId id = static_cast<HcalDetId>(hit->id());
-      double et = hit->energy() / cosh(geo_endcap->getGeometry(id)->getPosition().eta());
+
+      double eta = geo_endcap->getGeometry(id)->getPosition().eta();
+      double phi = geo_endcap->getGeometry(id)->getPosition().phi();
+
+      if (id.subdet() == HcalBarrel) {
+         eta = geo_barrel->getGeometry(id)->getPosition().eta();
+         phi = geo_barrel->getGeometry(id)->getPosition().phi();
+      }
+
+      double et = hit->energy() / cosh(eta);
 
       if (comp->getSeverityLevel(id,
                hit->flags(),
                status->getValues(id)->getValue()) > 10)
          continue;
+
+      rh_energies[l1_geo->globalEtaIndex(eta)][l1_geo->htSumPhiIndex(phi)] += et;
 
       if (hit->energy() < 0.7)
          continue;
@@ -190,6 +234,62 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          rechit_sum_b += et;
       else if (id.subdet() == HcalEndcap)
          rechit_sum_e += et;
+   }
+
+   // ====.
+   // TPDs >-----------------------------------------------------------
+   // ===='
+   Handle<HcalTrigPrimDigiCollection> digis;
+   if (!event.getByLabel(digis_, digis)) {
+      LogError("HcalTrigPrimDigiCleaner") <<
+         "Can't find hcal trigger primitive digi collection with tag '" <<
+         digis_ << "'" << std::endl;
+      return;
+   }
+
+   HcalTrigTowerGeometry tpd_geo;
+   // setup.get<CaloGeometryRecord>().get(tpd_geo);
+
+   ESHandle<L1CaloHcalScale> hcal_scale;
+   setup.get<L1CaloHcalScaleRcd>().get(hcal_scale);
+   const L1CaloHcalScale* h = hcal_scale.product();
+
+   edm::ESHandle<L1RCTParameters> rct;
+   setup.get<L1RCTParametersRcd>().get(rct);
+   const L1RCTParameters* r = rct.product();
+
+   for (const auto& digi: *digis) {
+      HcalTrigTowerDetId id = digi.id();
+
+      float hcal = h->et(digi.SOI_compressedEt(), id.ietaAbs(), id.zside());
+      float ecal = 0.;
+      float et = 0.;
+
+      if (id.ietaAbs() > 28)
+         continue;
+
+      try {
+         et = r->JetMETTPGSum(ecal, hcal, id.ietaAbs());
+      } catch (...) {
+         edm::LogError("ChainCmpPlotter") << "Failed to convert "
+            << id.ietaAbs() << ", " << hcal << std::endl;
+         continue;
+      }
+
+      auto ids = tpd_geo.detIds(id);
+
+      if (ids.size() < 1)
+         continue;
+
+      double eta = geo_endcap->getGeometry(ids[0])->getPosition().eta();
+      double phi = geo_endcap->getGeometry(ids[0])->getPosition().phi();
+
+      if (ids[0].subdet() == HcalBarrel) {
+         eta = geo_barrel->getGeometry(ids[0])->getPosition().eta();
+         phi = geo_barrel->getGeometry(ids[0])->getPosition().phi();
+      }
+
+      tp_energies[l1_geo->globalEtaIndex(eta)][l1_geo->htSumPhiIndex(phi)] += et;
    }
 
    edm::Handle< edm::SortedCollection<CaloTower> > towers;
@@ -211,6 +311,29 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          tower_sum_b += t.hadEt();
       else if (t.ietaAbs() <= 28)
          tower_sum_e += t.hadEt();
+   }
+
+   for (int i = 0; i < 22; ++i) {
+      for (int j = 0; j < 18; ++j) {
+         double l1 = 0.;
+         double rh = 0.;
+         double tp = 0.;
+
+         for (int n = -1; n <= 1; ++n) {
+            for (int m = -1; m <= 1; ++m) {
+               int x = (i + n + 22) % 22;
+               int y = (j + m + 18) % 18;
+
+               l1 += l1_energies[x][y];
+               rh += rh_energies[x][y];
+               tp += tp_energies[x][y];
+            }
+         }
+
+         if (l1_energies[i][j] > 1 || rh_energies[i][j] > 1 || tp_energies[i][j] > 1)
+            if (debug_)
+               std::cout << i << ", " << l1 << "\t->\t" << tp << "\t,\t" << rh << std::endl;
+      }
    }
 
    regions_vs_rechits_b_->Fill(region_sum_b, rechit_sum_b, weight);

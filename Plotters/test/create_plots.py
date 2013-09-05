@@ -342,8 +342,9 @@ process.recHitPlotter10_0.cut = cms.untracked.double(10.0)
 process.recHitPlotter20_0 = process.recHitPlotter.clone()
 process.recHitPlotter20_0.cut = cms.untracked.double(20.0)
 
-if reemul:
-    process.chainCmpPlotter.regions = cms.InputTag('rctReEmulDigis')
+process.reEmulChainCmpPlotter = process.chainCmpPlotter.clone()
+process.reEmulChainCmpPlotter.tpds = cms.InputTag('hcalReEmulDigis')
+process.reEmulChainCmpPlotter.regions = cms.InputTag('rctReEmulDigis')
 
 if data:
     process.recHitPlotter.timeShift = cms.untracked.double(-5.)
@@ -429,6 +430,9 @@ if reco or do_reco:
 if (raw and reco) or do_reco:
     process.p *= process.recHitTPPlotter
     process.p *= process.chainCmpPlotter
+
+    if reemul:
+        process.p += process.reEmulChainCmpPlotter
 
 if mc:
     process.p *= process.genEnergyPlotter
