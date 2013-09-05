@@ -219,15 +219,20 @@ class Plots:
             first = True
             for plt in self.__plots:
                 if first:
+                    xaxis = plt.GetXaxis()
                     if self.__limits:
-                        xaxis = plt.GetXaxis()
                         ratio = xaxis.GetNbins() * \
                                 float.__rsub__(*map(float, self.__limits)) / \
                                 (xaxis.GetXmax() - xaxis.GetXmin()) / \
                                 80.
                     else:
-                        ratio = xaxis_up.GetNbins() / 80.
+                        ratio = xaxis.GetNbins() / 80.
+
                     ratio = max(1, int(ratio))
+
+                    while xaxis.GetNbins() % ratio != 0:
+                        ratio += 1
+
                     drawn_plots.append(plt.Rebin(ratio))
                     first = False
                 else:
