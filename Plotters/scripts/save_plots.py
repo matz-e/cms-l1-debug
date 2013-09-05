@@ -446,7 +446,7 @@ def fix_histo(path, hist):
                 # hist.SetOption("P")
             if f not in data_files:
                 data_files.append(f)
-            hist.SetMarkerStyle(data_markers[data_files.index(f)])
+            hist.SetMarkerStyle(data_markers[data_files.index(f) % len(data_markers)])
             # if 'reemul' in basedir:
                 # hist.SetMarkerStyle(r.kFullTriangleUp)
             # else:
