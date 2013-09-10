@@ -221,6 +221,8 @@ else:
 if raw or do_reco:
     process.q *= process.RawToDigi
 
+process.load('Debug.Plotters.ChainCmpPlotter_cfi')
+
 if raw and reemul:
     process.load('HLTrigger.Configuration.HLT_FULL_cff')
     process.load('Configuration.StandardSequences.SimL1Emulator_cff')
@@ -269,6 +271,8 @@ if raw and reemul:
         insert_before(process.HLTL1UnpackerSequence,
                 process.hcalTPDCleaner, process.rctReEmulDigis)
 
+        process.chainCmpPlotter.cut = cms.untracked.double(tpd_thres)
+
 if do_reco:
     process.q *= process.reconstruction
 
@@ -281,7 +285,6 @@ process.load('SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff')
 process.load('Debug.Plotters.CaloRegionPlotter_cfi')
 process.load('Debug.Plotters.CaloTowerPlotter_cfi')
 process.load('Debug.Plotters.CaloRegionCmpPlotter_cfi')
-process.load('Debug.Plotters.ChainCmpPlotter_cfi')
 process.load('Debug.Plotters.DigiPlotter_cfi')
 process.load('Debug.Plotters.GenEnergyPlotter_cfi')
 process.load('Debug.Plotters.L1GctPlotter_cfi')
