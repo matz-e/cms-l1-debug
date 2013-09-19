@@ -309,56 +309,11 @@ if raw and reco:
 process.caloTowerPlotter01 = process.caloTowerPlotter.clone()
 process.caloTowerPlotter01.cut = cms.untracked.double(1.)
 
-process.caloTowerPlotter02 = process.caloTowerPlotter.clone()
-process.caloTowerPlotter02.cut = cms.untracked.double(2.)
+process.recHitPlotter01 = process.recHitPlotter.clone()
+process.recHitPlotter01.cut = cms.untracked.double(1.0)
 
-process.caloTowerPlotter03 = process.caloTowerPlotter.clone()
-process.caloTowerPlotter03.cut = cms.untracked.double(3.)
-
-process.caloTowerPlotter04 = process.caloTowerPlotter.clone()
-process.caloTowerPlotter04.cut = cms.untracked.double(4.)
-
-process.caloTowerPlotter05 = process.caloTowerPlotter.clone()
-process.caloTowerPlotter05.cut = cms.untracked.double(5.)
-
-process.recHitPlotter00_1 = process.recHitPlotter.clone()
-process.recHitPlotter00_1.cut = cms.untracked.double(0.1)
-
-process.recHitPlotter00_2 = process.recHitPlotter.clone()
-process.recHitPlotter00_2.cut = cms.untracked.double(0.2)
-
-process.recHitPlotter00_5 = process.recHitPlotter.clone()
-process.recHitPlotter00_5.cut = cms.untracked.double(0.5)
-
-process.recHitPlotter01_0 = process.recHitPlotter.clone()
-process.recHitPlotter01_0.cut = cms.untracked.double(1.0)
-
-process.recHitPlotter02_0 = process.recHitPlotter.clone()
-process.recHitPlotter02_0.cut = cms.untracked.double(2.0)
-
-process.recHitPlotter05_0 = process.recHitPlotter.clone()
-process.recHitPlotter05_0.cut = cms.untracked.double(5.0)
-
-process.recHitPlotter10_0 = process.recHitPlotter.clone()
-process.recHitPlotter10_0.cut = cms.untracked.double(10.0)
-
-process.recHitPlotter20_0 = process.recHitPlotter.clone()
-process.recHitPlotter20_0.cut = cms.untracked.double(20.0)
-
-process.reEmulChainCmpPlotter = process.chainCmpPlotter.clone()
-process.reEmulChainCmpPlotter.tpds = cms.InputTag('hcalReEmulDigis')
-process.reEmulChainCmpPlotter.regions = cms.InputTag('rctReEmulDigis')
-
-if data:
-    process.recHitPlotter.timeShift = cms.untracked.double(-5.)
-    process.recHitPlotter00_1.timeShift = cms.untracked.double(-5.)
-    process.recHitPlotter00_2.timeShift = cms.untracked.double(-5.)
-    process.recHitPlotter00_5.timeShift = cms.untracked.double(-5.)
-    process.recHitPlotter01_0.timeShift = cms.untracked.double(-5.)
-    process.recHitPlotter02_0.timeShift = cms.untracked.double(-5.)
-    process.recHitPlotter05_0.timeShift = cms.untracked.double(-5.)
-    process.recHitPlotter10_0.timeShift = cms.untracked.double(-5.)
-    process.recHitPlotter20_0.timeShift = cms.untracked.double(-5.)
+process.chainCmpPlotter01 = process.chainCmpPlotter.clone()
+process.chainCmpPlotter01.cut = cms.untracked.double(1.0)
 
 if cleanhcal:
     process.cleanTrigPrimPlotter = process.triggerPrimitiveDigiPlotter.clone()
@@ -379,8 +334,13 @@ process.reEmulGctPlotter.l1GctSums = cms.InputTag('gctReEmulDigis')
 process.reEmulTrigPlotter = process.trigPlotter.clone()
 process.reEmulTrigPlotter.l1Bits = cms.InputTag('simGtDigis')
 
-process.reEmulJetPlotter = process.jetPlotter.clone()
-process.reEmulJetPlotter.l1Jets = cms.untracked.string('hltL1extraParticles')
+process.reEmulChainCmpPlotter = process.chainCmpPlotter.clone()
+process.reEmulChainCmpPlotter.tpds = cms.InputTag('hcalReEmulDigis')
+process.reEmulChainCmpPlotter.regions = cms.InputTag('rctReEmulDigis')
+
+process.reEmulChainCmpPlotter01 = process.chainCmpPlotter01.clone()
+process.reEmulChainCmpPlotter01.tpds = cms.InputTag('hcalReEmulDigis')
+process.reEmulChainCmpPlotter01.regions = cms.InputTag('rctReEmulDigis')
 
 process.triggerPrimitiveDigiPlotter.ecalDigis = cms.InputTag(
         'ecalDigis', 'EcalTriggerPrimitives')
@@ -395,7 +355,6 @@ if mc:
 if raw or reco:
     process.p *= \
             process.gctPlotter * \
-            process.jetPlotter * \
             process.trigPlotter
 if raw:
     process.p *= \
@@ -408,7 +367,6 @@ if raw and reemul:
             process.reEmulTrigPrimPlotter * \
             process.reEmulCaloRegionPlotter * \
             process.reEmulGctPlotter * \
-            process.reEmulJetPlotter * \
             process.reEmulTrigPlotter * \
             process.triggerPrimitiveDigiCmpPlotter
 
@@ -416,26 +374,18 @@ if reco or do_reco:
     process.p *= \
             process.caloTowerPlotter * \
             process.caloTowerPlotter01 * \
-            process.caloTowerPlotter02 * \
-            process.caloTowerPlotter03 * \
-            process.caloTowerPlotter04 * \
-            process.caloTowerPlotter05 * \
             process.trackPlotter * \
             process.recHitPlotter * \
-            process.recHitPlotter00_1 * \
-            process.recHitPlotter00_2 * \
-            process.recHitPlotter00_5 * \
-            process.recHitPlotter01_0 * \
-            process.recHitPlotter02_0 * \
-            process.recHitPlotter05_0 * \
-            process.recHitPlotter10_0 * \
-            process.recHitPlotter20_0
+            process.recHitPlotter01
+
 if (raw and reco) or do_reco:
     process.p *= process.recHitTPPlotter
     process.p *= process.chainCmpPlotter
+    process.p *= process.chainCmpPlotter01
 
     if reemul:
-        process.p += process.reEmulChainCmpPlotter
+        process.p *= process.reEmulChainCmpPlotter
+        process.p *= process.reEmulChainCmpPlotter01
 
 if mc:
     process.p *= process.genEnergyPlotter
