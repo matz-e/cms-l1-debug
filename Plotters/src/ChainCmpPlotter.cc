@@ -70,6 +70,7 @@
 
 #include "Debug/Plotters/interface/BasePlotter.h"
 
+#include "TH1D.h"
 #include "TH2D.h"
 #include "TString.h"
 //
@@ -93,10 +94,37 @@ class ChainCmpPlotter : public edm::EDAnalyzer, BasePlotter {
       edm::InputTag rechits_;
       edm::InputTag towers_;
 
+      TH2D *region_vs_rechit_b_;
+      TH2D *region_vs_tower_b_;
+      TH2D *region_vs_rechit_e_;
+      TH2D *region_vs_tower_e_;
+
+      TH1D *tpd_lost_et_;
+      TH1D *tpd_lost_et_tot_;
+
+      TH2D *tpd_vs_rechit_;
+      TH2D *tpd_vs_rechit_b_;
+      TH2D *tpd_vs_rechit_e_;
+      TH2D *tpd_vs_rechit_1_;
+      TH2D *tpd_vs_rechit_2_;
+      TH2D *tpd_vs_rechit_3_;
+      TH2D *tpd_vs_rechit_4_;
+
+      TH2D *tpd_vs_rechit_num_;
+      TH2D *tpd_vs_rechit_num_b_;
+      TH2D *tpd_vs_rechit_num_e_;
+      TH2D *tpd_vs_rechit_num_1_;
+      TH2D *tpd_vs_rechit_num_2_;
+      TH2D *tpd_vs_rechit_num_3_;
+      TH2D *tpd_vs_rechit_num_4_;
+
       TH2D *regions_vs_rechits_b_;
       TH2D *regions_vs_towers_b_;
       TH2D *regions_vs_rechits_e_;
       TH2D *regions_vs_towers_e_;
+
+      TH2D *tpds_vs_rechits_b_;
+      TH2D *tpds_vs_rechits_b_;
 
       double cut_;
       bool debug_;
@@ -114,14 +142,60 @@ ChainCmpPlotter::ChainCmpPlotter(const edm::ParameterSet& config) :
 {
    edm::Service<TFileService> fs;
 
+   region_vs_rechit_b_ = fs->make<TH2D>("region_vs_rechit_b",
+         "CaloRegion vs Rechit (barrel);Region E_{T};RecHit E_{T};Num", 200, 0, 200, 200, 0, 200);
+   region_vs_tower_b_ = fs->make<TH2D>("region_vs_tower_b",
+         "CaloRegion vs CaloTower (barrel);Region E_{T};Tower E_{T};Num", 200, 0, 200, 200, 0, 200);
+   region_vs_rechit_e_ = fs->make<TH2D>("region_vs_rechit_e",
+         "CaloRegion vs Rechit (endcap);Region E_{T};RecHit E_{T};Num", 200, 0, 200, 200, 0, 200);
+   region_vs_tower_e_ = fs->make<TH2D>("region_vs_tower_e",
+         "CaloRegion vs CaloTower (endcap);Region E_{T};Tower E_{T};Num", 200, 0, 200, 200, 0, 200);
+
+   tpd_lost_et_ = fs->make<TH1D>("tpd_lost_et", "TPD E_{T} (no RH);E_{T};Num", 100, 0, 100);
+   tpd_lost_et_tot_ = fs->make<TH1D>("tpd_lost_et_tot", "TPD #sum E_{T} (no RH);#sum E_{T};Num", 300, 0, 300);
+
+   tpd_vs_rechit_ = fs->make<TH2D>("tpd_vs_rechit",
+         "TPD vs Rechit;RCT #eta;RCT #phi;#Delta |E_{T}|", 22, 0, 22, 18, 0, 18);
+   tpd_vs_rechit_b_ = fs->make<TH2D>("tpd_vs_rechit_b",
+         "TPD vs Rechit (barrel);TPD E_{T};RecHit E_{T};Num", 200, 0, 200, 200, 0, 200);
+   tpd_vs_rechit_e_ = fs->make<TH2D>("tpd_vs_rechit_e",
+         "TPD vs Rechit (endcap);TPD E_{T};RecHit E_{T};Num", 200, 0, 200, 200, 0, 200);
+   tpd_vs_rechit_1_ = fs->make<TH2D>("tpd_vs_rechit_1",
+         "TPD vs Rechit (ieta 7, 14);TPD E_{T};RecHit E_{T};Num", 200, 0, 200, 200, 0, 200);
+   tpd_vs_rechit_2_ = fs->make<TH2D>("tpd_vs_rechit_2",
+         "TPD vs Rechit (ieta 6, 15);TPD E_{T};RecHit E_{T};Num", 200, 0, 200, 200, 0, 200);
+   tpd_vs_rechit_3_ = fs->make<TH2D>("tpd_vs_rechit_3",
+         "TPD vs Rechit (ieta 5, 16);TPD E_{T};RecHit E_{T};Num", 200, 0, 200, 200, 0, 200);
+   tpd_vs_rechit_4_ = fs->make<TH2D>("tpd_vs_rechit_4",
+         "TPD vs Rechit (ieta 4, 17);TPD E_{T};RecHit E_{T};Num", 200, 0, 200, 200, 0, 200);
+   tpd_vs_rechit_num_ = fs->make<TH2D>("tpd_vs_rechit_num",
+         "TPD vs Rechit;RCT #eta;RCT #phi;#Delta |# RH - # TP|", 22, 0, 22, 18, 0, 18);
+   tpd_vs_rechit_num_b_ = fs->make<TH2D>("tpd_vs_rechit_num_b",
+         "TPD vs Rechit (barrel);# TPD;# RecHit;Num", 200, 0, 200, 200, 0, 200);
+   tpd_vs_rechit_num_e_ = fs->make<TH2D>("tpd_vs_rechit_num_e",
+         "TPD vs Rechit (endcap);# TPD;# RecHit;Num", 200, 0, 200, 200, 0, 200);
+   tpd_vs_rechit_num_1_ = fs->make<TH2D>("tpd_vs_rechit_num_1",
+         "TPD vs Rechit (ieta 7, 14);# TPD;# RecHit;Num", 200, 0, 200, 200, 0, 200);
+   tpd_vs_rechit_num_2_ = fs->make<TH2D>("tpd_vs_rechit_num_2",
+         "TPD vs Rechit (ieta 6, 15);# TPD;# RecHit;Num", 200, 0, 200, 200, 0, 200);
+   tpd_vs_rechit_num_3_ = fs->make<TH2D>("tpd_vs_rechit_num_3",
+         "TPD vs Rechit (ieta 5, 16);# TPD;# RecHit;Num", 200, 0, 200, 200, 0, 200);
+   tpd_vs_rechit_num_4_ = fs->make<TH2D>("tpd_vs_rechit_num_4",
+         "TPD vs Rechit (ieta 4, 17);# TPD;# RecHit;Num", 200, 0, 200, 200, 0, 200);
+
+   tpds_vs_rechits_b_ = fs->make<TH2D>("tpds_vs_rechits_b",
+         "TPD vs Rechit (barrel);TPD #sum E_{T};RecHit #sum E_{T};Num", 750, 0, 750, 750, 0, 750);
+   tpds_vs_rechits_e_ = fs->make<TH2D>("tpds_vs_rechits_e",
+         "TPD vs Rechit (endcap);TPD #sum E_{T};RecHit #sum E_{T};Num", 750, 0, 750, 750, 0, 750);
+
    regions_vs_rechits_b_ = fs->make<TH2D>("regions_vs_rechits_b",
-         "CaloRegions vs RecHits (barrel);Region E_{T};RecHit E_{T};Num", 750, 0, 750, 500, 0, 500);
+         "CaloRegions vs RecHits (barrel);Region #sum E_{T};RecHit #sum E_{T};Num", 750, 0, 750, 500, 0, 500);
    regions_vs_towers_b_ = fs->make<TH2D>("regions_vs_towers_b",
-         "CaloRegions vs CaloTowers (barrel);Region E_{T};Tower E_{T};Num", 750, 0, 750, 500, 0, 500);
+         "CaloRegions vs CaloTowers (barrel);Region #sum E_{T};Tower #sum E_{T};Num", 750, 0, 750, 500, 0, 500);
    regions_vs_rechits_e_ = fs->make<TH2D>("regions_vs_rechits_e",
-         "CaloRegions vs RecHits (endcap);Region E_{T};RecHit E_{T};Num", 750, 0, 750, 500, 0, 500);
+         "CaloRegions vs RecHits (endcap);Region #sum E_{T};RecHit #sum E_{T};Num", 750, 0, 750, 500, 0, 500);
    regions_vs_towers_e_ = fs->make<TH2D>("regions_vs_towers_e",
-         "CaloRegions vs CaloTowers (endcap);Region E_{T};Tower E_{T};Num", 750, 0, 750, 500, 0, 500);
+         "CaloRegions vs CaloTowers (endcap);Region #sum E_{T};Tower #sum E_{T};Num", 750, 0, 750, 500, 0, 500);
 }
 
 ChainCmpPlotter::~ChainCmpPlotter() {}
@@ -136,14 +210,19 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    double region_sum_b = 0.;
    double rechit_sum_b = 0.;
    double tower_sum_b = 0.;
+   double tpd_sum_b = 0;
    double region_sum_e = 0.;
    double rechit_sum_e = 0.;
    double tower_sum_e = 0.;
+   double tpd_sum_e = 0;
 
    double tp_energies[22][18];
    double l1_energies[22][18];
    double rh_energies[22][18];
    double ct_energies[22][18];
+
+   double tp_counts[22][18];
+   double rh_counts[22][18];
 
    for (int i = 0; i < 22; ++i) {
       for (int j = 0; j < 18; ++j) {
@@ -151,6 +230,9 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          l1_energies[i][j] = 0.;
          rh_energies[i][j] = 0.;
          ct_energies[i][j] = 0.;
+
+         tp_counts[i][j] = 0.;
+         rh_counts[i][j] = 0.;
       }
    }
 
@@ -223,6 +305,7 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          continue;
 
       rh_energies[l1_geo->globalEtaIndex(eta)][l1_geo->htSumPhiIndex(phi)] += et;
+      rh_counts[l1_geo->globalEtaIndex(eta)][l1_geo->htSumPhiIndex(phi)] += 1;
 
       if (hit->energy() < 0.7)
          continue;
@@ -258,6 +341,8 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    setup.get<L1RCTParametersRcd>().get(rct);
    const L1RCTParameters* r = rct.product();
 
+   double et_lost = 0.;
+
    for (const auto& digi: *digis) {
       HcalTrigTowerDetId id = digi.id();
 
@@ -278,8 +363,16 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 
       auto ids = tpd_geo.detIds(id);
 
-      if (ids.size() < 1)
+      if (et < cut_)
          continue;
+
+      if (ids.size() < 1) {
+         tpd_lost_et_->Fill(et, weight);
+         et_lost += et;
+         continue;
+      } else if (ids.size() > 1) {
+         std::cout << ids.size() << std::endl;
+      }
 
       double eta = geo_endcap->getGeometry(ids[0])->getPosition().eta();
       double phi = geo_endcap->getGeometry(ids[0])->getPosition().phi();
@@ -287,10 +380,17 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       if (ids[0].subdet() == HcalBarrel) {
          eta = geo_barrel->getGeometry(ids[0])->getPosition().eta();
          phi = geo_barrel->getGeometry(ids[0])->getPosition().phi();
+
+         tpd_sum_b += et;
+      } else {
+         tpd_sum_e += et;
       }
 
       tp_energies[l1_geo->globalEtaIndex(eta)][l1_geo->htSumPhiIndex(phi)] += et;
+      tp_counts[l1_geo->globalEtaIndex(eta)][l1_geo->htSumPhiIndex(phi)] += 1;
    }
+
+   tpd_lost_et_tot_->Fill(et_lost, weight);
 
    edm::Handle< edm::SortedCollection<CaloTower> > towers;
    if (!event.getByLabel(towers_, towers)) {
@@ -311,6 +411,16 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          tower_sum_b += t.hadEt();
       else if (t.ietaAbs() <= 28)
          tower_sum_e += t.hadEt();
+
+      // double eta = geo_endcap->getGeometry(t.id())->getPosition().eta();
+      // double phi = geo_endcap->getGeometry(t.id())->getPosition().phi();
+
+      // if (t.id().subdet() == HcalBarrel) {
+         // eta = geo_barrel->getGeometry(t.id())->getPosition().eta();
+         // phi = geo_barrel->getGeometry(t.id())->getPosition().phi();
+      // }
+
+      // tp_energies[l1_geo->globalEtaIndex(eta)][l1_geo->htSumPhiIndex(phi)] += t.hadEt();
    }
 
    for (int i = 0; i < 22; ++i) {
@@ -330,16 +440,58 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
             }
          }
 
-         if (l1_energies[i][j] > 1 || rh_energies[i][j] > 1 || tp_energies[i][j] > 1)
-            if (debug_)
+         if (debug_) {
+            if (l1_energies[i][j] > 1 || rh_energies[i][j] > 1 || tp_energies[i][j] > 1)
                std::cout << i << ", " << l1 << "\t->\t" << tp << "\t,\t" << rh << std::endl;
+
+            if ((l1_energies[i][j] > 5) != (rh_energies[i][j] > 5) || abs(l1_energies[i][j] - rh_energies[i][j]) > 5) {
+               std::cout << i << ", " << j << "\t" << l1 << "\t->\t" << tp << "\t,\t" << rh << std::endl;
+               std::cout << "\t" << l1_energies[i][j] << "\t->\t" << tp_energies[i][j] << "\t,\t" << rh_energies[i][j] << std::endl;
+            }
+         }
+
+         tpd_vs_rechit_->Fill(i, j, weight * fabs(rh_energies[i][j] - tp_energies[i][j]));
+         tpd_vs_rechit_num_->Fill(i, j, weight * fabs(rh_counts[i][j] - tp_counts[i][j]));
+
+         if (i == 7 || i == 14) {
+            tpd_vs_rechit_1_->Fill(tp_energies[i][j], rh_energies[i][j], weight);
+            tpd_vs_rechit_num_1_->Fill(tp_counts[i][j], rh_counts[i][j], weight);
+         } else if (i == 6 || i == 15) {
+            tpd_vs_rechit_2_->Fill(tp_energies[i][j], rh_energies[i][j], weight);
+            tpd_vs_rechit_num_2_->Fill(tp_counts[i][j], rh_counts[i][j], weight);
+         } else if (i == 5 || i == 16) {
+            tpd_vs_rechit_3_->Fill(tp_energies[i][j], rh_energies[i][j], weight);
+            tpd_vs_rechit_num_3_->Fill(tp_counts[i][j], rh_counts[i][j], weight);
+         } else if (i == 4 || i == 16) {
+            tpd_vs_rechit_4_->Fill(tp_energies[i][j], rh_energies[i][j], weight);
+            tpd_vs_rechit_num_4_->Fill(tp_counts[i][j], rh_counts[i][j], weight);
+         }
+
+         if (i >= 7 && i <= 14) {
+            region_vs_rechit_b_->Fill(l1_energies[i][j], rh_energies[i][j], weight);
+            region_vs_tower_b_->Fill(l1_energies[i][j], ct_energies[i][j], weight);
+
+            tpd_vs_rechit_b_->Fill(tp_energies[i][j], rh_energies[i][j], weight);
+            tpd_vs_rechit_num_b_->Fill(tp_counts[i][j], rh_counts[i][j], weight);
+         } else {
+            region_vs_rechit_e_->Fill(l1_energies[i][j], rh_energies[i][j], weight);
+            region_vs_tower_e_->Fill(l1_energies[i][j], ct_energies[i][j], weight);
+
+            tpd_vs_rechit_e_->Fill(tp_energies[i][j], rh_energies[i][j], weight);
+            tpd_vs_rechit_num_e_->Fill(tp_counts[i][j], rh_counts[i][j], weight);
+         }
       }
    }
+
+   if (debug_)
+      std::cout << "---" << std::endl;
 
    regions_vs_rechits_b_->Fill(region_sum_b, rechit_sum_b, weight);
    regions_vs_towers_b_->Fill(region_sum_b, tower_sum_b, weight);
    regions_vs_rechits_e_->Fill(region_sum_e, rechit_sum_e, weight);
    regions_vs_towers_e_->Fill(region_sum_e, tower_sum_e, weight);
+   tpds_vs_rechits_b_->Fill(tpd_sum_b, rechit_sum_b, weight);
+   tpds_vs_rechits_e_->Fill(tpd_sum_e, rechit_sum_e, weight);
 }
 
 void
