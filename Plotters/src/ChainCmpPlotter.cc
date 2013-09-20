@@ -124,7 +124,7 @@ class ChainCmpPlotter : public edm::EDAnalyzer, BasePlotter {
       TH2D *regions_vs_towers_e_;
 
       TH2D *tpds_vs_rechits_b_;
-      TH2D *tpds_vs_rechits_b_;
+      TH2D *tpds_vs_rechits_e_;
 
       double cut_;
       bool debug_;
@@ -251,11 +251,11 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          r != regions->end(); ++r) {
       double et = r->et() * 0.5;
 
-      int ieta = r->gctEta();
-      l1_energies[ieta][r->gctPhi()] += et;
-
       if (et < cut_)
          continue;
+
+      int ieta = r->gctEta();
+      l1_energies[ieta][r->gctPhi()] += et;
 
       if ((ieta < 7 || ieta > 14) && !r->isHf()) {
          region_sum_e += et;
@@ -304,14 +304,14 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
                status->getValues(id)->getValue()) > 10)
          continue;
 
-      rh_energies[l1_geo->globalEtaIndex(eta)][l1_geo->htSumPhiIndex(phi)] += et;
-      rh_counts[l1_geo->globalEtaIndex(eta)][l1_geo->htSumPhiIndex(phi)] += 1;
-
       if (hit->energy() < 0.7)
          continue;
 
       if (et < cut_)
          continue;
+
+      rh_energies[l1_geo->globalEtaIndex(eta)][l1_geo->htSumPhiIndex(phi)] += et;
+      rh_counts[l1_geo->globalEtaIndex(eta)][l1_geo->htSumPhiIndex(phi)] += 1;
 
       if (id.subdet() == HcalBarrel)
          rechit_sum_b += et;
