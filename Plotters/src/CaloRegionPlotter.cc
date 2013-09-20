@@ -173,32 +173,35 @@ CaloRegionPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup
             r != regions->end(); ++r) {
          int ieta = r->gctEta();
 
-         et_tot += r->et();
+         // Calo regions have energies measured in half GeV.
+         double et = 0.5 * r->et();
+
+         et_tot += et;
          if (r->isHf()) {
-            calo_et_f_->Fill(r->et(), weight);
-            et_tot_f += r->et();
+            calo_et_f_->Fill(et, weight);
+            et_tot_f += et;
          } else if (ieta < 7 || ieta > 14) {
-            calo_et_e_->Fill(r->et(), weight);
-            et_tot_e += r->et();
-            et_tot_be += r->et();
+            calo_et_e_->Fill(et, weight);
+            et_tot_e += et;
+            et_tot_be += et;
 
             if (ieta == 4 || ieta == 17) {
-               calo_et_e_3_->Fill(r->et(), weight);
-               et_tot_e_3 += r->et();
+               calo_et_e_3_->Fill(et, weight);
+               et_tot_e_3 += et;
             } else if (ieta == 5 || ieta == 16) {
-               calo_et_e_2_->Fill(r->et(), weight);
-               et_tot_e_2 += r->et();
+               calo_et_e_2_->Fill(et, weight);
+               et_tot_e_2 += et;
             } else {
-               calo_et_e_1_->Fill(r->et(), weight);
-               et_tot_e_1 += r->et();
+               calo_et_e_1_->Fill(et, weight);
+               et_tot_e_1 += et;
             }
          } else {
-            calo_et_b_->Fill(r->et(), weight);
-            et_tot_b += r->et();
-            et_tot_be += r->et();
+            calo_et_b_->Fill(et, weight);
+            et_tot_b += et;
+            et_tot_be += et;
          }
 
-         h_calo_et_->Fill(r->gctEta(), r->gctPhi(), weight * r->et());
+         h_calo_et_->Fill(r->gctEta(), r->gctPhi(), weight * et);
          h_calo_fg_->Fill(r->gctEta(), r->gctPhi(), weight * r->fineGrain());
          h_calo_mp_->Fill(r->gctEta(), r->gctPhi(), weight);
       }
