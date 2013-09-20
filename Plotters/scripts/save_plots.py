@@ -401,6 +401,38 @@ def plot_stacks(stacks, filename, width=None):
         s.draw(c.GetPad(n), rebin=rebin(filename))
     c.SaveAs(filename)
 
+def save_single_plot(hists, legends, filename, ranges):
+    c = r.TCanvas("c", "", 600 * len(hists), 600)
+    c.Divide(len(hists), 1)
+
+    max = None
+    for (reg, val) in ranges:
+        if re.search(reg, filename):
+            max = val
+            break
+
+    for (n, l, h) in zip(range(len(hists)), legends, hists):
+        c.cd(n + 1)
+        h.SetTitle(l)
+        # max = 300
+        # if "data" in l.lower() or "mc" in l.lower():
+            # max = 200
+        # if "num" in filename.lower():
+            # max = 30
+        if max:
+            h.GetXaxis().SetRangeUser(0, max)
+            h.GetYaxis().SetRangeUser(0, max)
+        c.GetPad(n + 1).SetLogz()
+        h.Draw("COLZ")
+
+        if max:
+            f = r.TF1("f" + str(n), "x", 0, max)
+            f.DrawCopy("same")
+    dirname = os.path.dirname(filename)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    c.SaveAs(filename)
+
 last_color = 0
 colors = {}
 counts = {}
@@ -428,9 +460,9 @@ def fix_histo(path, hist):
         hist.GetXaxis().SetTitle(
                 hist.GetXaxis().GetTitle().replace("E", "E_{T}"))
 
-    m = re.search(r'plots_([a-zA-Z0-9]+)(?:_([^_]+))?_([a-zA-Z0-9+]+)-(\w+).root$', f)
+    m = re.search(r'(?:standalone_)?plots_([a-zA-Z0-9]+)[_.]', f)
     if m:
-        (label, mod, tier, pu) = m.groups()
+        (label,) = m.groups()
         if label == 'mc':
             label = label.upper()
             if f not in mc_files:
@@ -536,14 +568,28 @@ class FixedProj:
 projs = {'ieta': FixedProj(r.TH2.ProjectionX),
          'iphi': FixedProj(r.TH2.ProjectionY)}
 
-def plot_directory(pattern, basepath, files):
-    files = [[r.TFile(tpl[0])] + tpl for tpl in files]
+def plot_directory(pattern, basepath, files, ranges=None):
+    nfiles = []
+    for tpl in files:
+        f = r.TFile(tpl[0])
+        if not f.IsOpen():
+            continue
+        nfiles.append([f] + tpl)
+    files = nfiles
 
     counts = {}
     for (file, fn, leg, col, paths) in files:
         counts[fn] = get_num_events(fn)
 
-    (file, basefile, leg, col, paths) = files[0]
+    idx = 0
+    paths = []
+
+    while idx < len(files) and basepath not in paths:
+        (file, basefile, leg, col, paths) = files[idx]
+        idx += 1
+    if idx > len(files) or basepath not in paths:
+        return
+
     basedir = file.Get(paths[basepath])
     for k in basedir.GetListOfKeys():
         key = k.GetName()
@@ -555,11 +601,12 @@ def plot_directory(pattern, basepath, files):
         hists, legends, norms = [], [], []
         for (file, fn, leg, col, paths) in files:
             if basepath not in paths:
+                sys.stderr.write("Skipping path {0} for file {1}\n".format(basepath, fn))
                 continue
 
             obj = file.Get(paths[basepath] + "/" + key)
             if not obj:
-                sys.stderr.write("Can't find {p}/{k} in {f}\n".format(p=basepath, k=key, f=fn))
+                sys.stderr.write("Can't find {p}/{k} in {f}\n".format(p=paths[basepath], k=key, f=fn))
                 continue
 
             o = fix_histo(fn + ':' + basepath, obj)
@@ -598,9 +645,17 @@ def plot_directory(pattern, basepath, files):
 
                     obj = file.Get(paths[basepath] + "/" + newkey)
                     if not obj:
-                        sys.stderr.write("Can't find {p}/{k} in {f}\n".format(p=basepath, k=key, f=fn))
+                        sys.stderr.write("Can't find {p}/{k} in {f}\n".format(p=paths[basepath], k=newkey, f=fn))
                         continue
                     norm_hists.append(obj)
+
+                if len(norm_hists) == 0:
+                    save_single_plot(
+                            hists,
+                            legends,
+                            pattern.format(p=key, d=basepath.lower()),
+                            ranges)
+                    continue
 
                 for (axis, proj) in projs.items():
                     if 'calo' in basepath.lower() or basepath == 'cr':
@@ -657,11 +712,27 @@ def get_color(o):
         # FIXME throw proper exception
         raise
 
-configs = yaml.load_all(open(sys.argv[1]))
+import optparse
+parser = optparse.OptionParser(usage="%prog [options] file")
+parser.add_option("-n", metavar="N", action="store", default=None,
+        type="int", dest="n", help="only process configuration part N")
+(opts, args) = parser.parse_args()
+
+if len(args) != 1:
+    parser.error("need to specifiy exactly one configuration file")
+
+configs = yaml.load_all(open(args[0]))
+
+if opts.n:
+    configs = [list(configs)[opts.n]]
 
 for config in configs:
+    if not "custom ranges" in config:
+        config["custom ranges"] = []
+
     # convert colors
     for tpl in config['files']:
         tpl[2] = get_color(tpl[2])
     for p in config['paths']:
-        plot_directory(config['output pattern'], p, config['files'])
+        plot_directory(config['output pattern'], p, config['files'],
+                config['custom ranges'])
