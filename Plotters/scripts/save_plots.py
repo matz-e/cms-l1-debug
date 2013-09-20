@@ -305,7 +305,7 @@ class Plots:
             # ymin *= 0.9
 
         if not self.__ratio_limits:
-            ymax = 1.55
+            ymax = 5
             ymin = 0.45
         else:
             ymin, ymax = self.__ratio_limits
