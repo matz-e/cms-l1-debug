@@ -292,7 +292,6 @@ process.load('Debug.Plotters.L1JetPlotter_cfi')
 process.load('Debug.Plotters.L1TriggerPlotter_cfi')
 process.load('Debug.Plotters.PileUpPlotter_cfi')
 process.load('Debug.Plotters.RecHitPlotter_cfi')
-process.load('Debug.Plotters.RecHitTPPlotter_cfi')
 process.load('Debug.Plotters.TrackPlotter_cfi')
 process.load('Debug.Plotters.TriggerPrimitiveDigiPlotter_cfi')
 process.load('Debug.Plotters.TriggerPrimitiveDigiCmpPlotter_cfi')
@@ -380,7 +379,6 @@ if reco or do_reco:
             process.recHitPlotter01
 
 if (raw and reco) or do_reco:
-    process.p *= process.recHitTPPlotter
     process.p *= process.chainCmpPlotter
     process.p *= process.chainCmpPlotter01
 
