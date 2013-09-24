@@ -341,6 +341,7 @@ process.reEmulChainCmpPlotter.regions = cms.InputTag('rctReEmulDigis')
 process.reEmulChainCmpPlotter01 = process.chainCmpPlotter01.clone()
 process.reEmulChainCmpPlotter01.tpds = cms.InputTag('hcalReEmulDigis')
 process.reEmulChainCmpPlotter01.regions = cms.InputTag('rctReEmulDigis')
+process.reEmulChainCmpPlotter01.debug = cms.untracked.bool(True)
 
 process.triggerPrimitiveDigiPlotter.ecalDigis = cms.InputTag(
         'ecalDigis', 'EcalTriggerPrimitives')

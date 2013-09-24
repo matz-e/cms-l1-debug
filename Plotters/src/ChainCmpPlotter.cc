@@ -203,6 +203,9 @@ ChainCmpPlotter::~ChainCmpPlotter() {}
 void
 ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 {
+   if (debug_)
+      std::cout << "BEGIN " << event.id() << std::endl;
+
    using namespace edm;
 
    double weight = this->weight(event);
@@ -223,6 +226,10 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 
    double tp_counts[22][18];
    double rh_counts[22][18];
+
+   // for debugging rct regions
+   unsigned int eta_inv = 5;
+   unsigned int phi_inv = 13;
 
    for (int i = 0; i < 22; ++i) {
       for (int j = 0; j < 18; ++j) {
@@ -304,6 +311,13 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
                status->getValues(id)->getValue()) > 10)
          continue;
 
+      // if (fabs(hit->time()) > 30)
+         // continue;
+
+      if (debug_ && l1_geo->globalEtaIndex(eta) == eta_inv && l1_geo->htSumPhiIndex(phi) == phi_inv) {
+         std::cout << "rh: " << et << " @ " << eta << "(" << id.ieta() << "), " << phi << "(" << id.iphi() << ")" << "\t" << id << " @ " << hit->time() << std::endl;
+      }
+
       if (hit->energy() < 0.7)
          continue;
 
@@ -343,8 +357,14 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
 
    double et_lost = 0.;
 
+   std::map<HcalDetId, double> tp_ets;
+
    for (const auto& digi: *digis) {
       HcalTrigTowerDetId id = digi.id();
+
+      int energy = digi[0].compressedEt();
+      for (int i = 1; i < digi.size(); ++i)
+         energy = std::max(energy, digi[i].compressedEt());
 
       float hcal = h->et(digi.SOI_compressedEt(), id.ietaAbs(), id.zside());
       float ecal = 0.;
@@ -362,17 +382,7 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       }
 
       auto ids = tpd_geo.detIds(id);
-
-      if (et < cut_)
-         continue;
-
-      if (ids.size() < 1) {
-         tpd_lost_et_->Fill(et, weight);
-         et_lost += et;
-         continue;
-      } else if (ids.size() > 1) {
-         std::cout << ids.size() << std::endl;
-      }
+      tp_ets[ids[0]] += et;
 
       double eta = geo_endcap->getGeometry(ids[0])->getPosition().eta();
       double phi = geo_endcap->getGeometry(ids[0])->getPosition().phi();
@@ -380,6 +390,44 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
       if (ids[0].subdet() == HcalBarrel) {
          eta = geo_barrel->getGeometry(ids[0])->getPosition().eta();
          phi = geo_barrel->getGeometry(ids[0])->getPosition().phi();
+      }
+
+      if (debug_ && l1_geo->globalEtaIndex(eta) == eta_inv && l1_geo->htSumPhiIndex(phi) == phi_inv) {
+         std::cout << "tp: " << et << " @ " << eta << "(" << ids[0].ieta() << "), " << phi << "(" << ids[0].iphi() << "), " << id << std::endl;
+         std::cout << digi << std::endl;
+      }
+   }
+
+   for (const auto& pair: tp_ets) {
+      auto id = pair.first;
+      auto et = pair.second;
+
+      double eta = geo_endcap->getGeometry(id)->getPosition().eta();
+      double phi = geo_endcap->getGeometry(id)->getPosition().phi();
+
+      if (id.subdet() == HcalBarrel) {
+         eta = geo_barrel->getGeometry(id)->getPosition().eta();
+         phi = geo_barrel->getGeometry(id)->getPosition().phi();
+      }
+
+      // if (debug_ && l1_geo->globalEtaIndex(eta) == eta_inv && l1_geo->htSumPhiIndex(phi) == phi_inv) {
+         // std::cout << "tp: " << et << " @ " << eta << "(" << id.ieta() << "), " << phi << "(" << id.iphi() << "), " << std::endl;
+      // }
+
+      if (et < cut_)
+         continue;
+
+      // if (ids.size() < 1) {
+         // tpd_lost_et_->Fill(et, weight);
+         // et_lost += et;
+         // continue;
+      // } else if (ids.size() > 1) {
+         // std::cout << ids.size() << std::endl;
+      // }
+
+      if (id.subdet() == HcalBarrel) {
+         eta = geo_barrel->getGeometry(id)->getPosition().eta();
+         phi = geo_barrel->getGeometry(id)->getPosition().phi();
 
          tpd_sum_b += et;
       } else {
@@ -441,12 +489,14 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          }
 
          if (debug_) {
-            if (l1_energies[i][j] > 1 || rh_energies[i][j] > 1 || tp_energies[i][j] > 1)
-               std::cout << i << ", " << l1 << "\t->\t" << tp << "\t,\t" << rh << std::endl;
+            // if (l1_energies[i][j] > 1 || rh_energies[i][j] > 1 || tp_energies[i][j] > 1)
+               // std::cout << i << ", " << l1 << "\t->\t" << tp << "\t,\t" << rh << std::endl;
 
-            if ((l1_energies[i][j] > 5) != (rh_energies[i][j] > 5) || abs(l1_energies[i][j] - rh_energies[i][j]) > 5) {
-               std::cout << i << ", " << j << "\t" << l1 << "\t->\t" << tp << "\t,\t" << rh << std::endl;
-               std::cout << "\t" << l1_energies[i][j] << "\t->\t" << tp_energies[i][j] << "\t,\t" << rh_energies[i][j] << std::endl;
+            if ((tp_energies[i][j] > 1) != (rh_energies[i][j] > 1) || fabs(tp_energies[i][j] - rh_energies[i][j]) > 1) {
+               std::cout << std::setprecision(3);
+               std::cout << i << ", " << j << "\t\t";
+               std::cout << tp_energies[i][j] << "\t->\t" << rh_energies[i][j] << "\t=>\t" << fabs(tp_energies[i][j] - rh_energies[i][j]) << std::endl;
+               std::cout << "\t\t" << tp_counts[i][j] << "\t->\t" << rh_counts[i][j] << std::endl;
             }
          }
 
