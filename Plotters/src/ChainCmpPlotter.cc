@@ -127,6 +127,7 @@ class ChainCmpPlotter : public edm::EDAnalyzer, BasePlotter {
       TH2D *tpds_vs_rechits_e_;
 
       double cut_;
+      double timecut_;
       bool debug_;
 };
 
@@ -138,6 +139,7 @@ ChainCmpPlotter::ChainCmpPlotter(const edm::ParameterSet& config) :
    rechits_(config.getParameter<edm::InputTag>("hits")),
    towers_(config.getParameter<edm::InputTag>("towers")),
    cut_(config.getUntrackedParameter<double>("cut", -.1)),
+   timecut_(config.getUntrackedParameter<double>("timecut", 1. / 0.)),
    debug_(config.getUntrackedParameter<bool>("debug", false))
 {
    edm::Service<TFileService> fs;
@@ -311,8 +313,8 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
                status->getValues(id)->getValue()) > 10)
          continue;
 
-      // if (fabs(hit->time()) > 30)
-         // continue;
+      if (fabs(hit->time()) > timecut_)
+         continue;
 
       if (debug_ && l1_geo->globalEtaIndex(eta) == eta_inv && l1_geo->htSumPhiIndex(phi) == phi_inv) {
          std::cout << "rh: " << et << " @ " << eta << "(" << id.ieta() << "), " << phi << "(" << id.iphi() << ")" << "\t" << id << " @ " << hit->time() << std::endl;
@@ -362,9 +364,9 @@ ChainCmpPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
    for (const auto& digi: *digis) {
       HcalTrigTowerDetId id = digi.id();
 
-      int energy = digi[0].compressedEt();
-      for (int i = 1; i < digi.size(); ++i)
-         energy = std::max(energy, digi[i].compressedEt());
+      // auto energy = digi[0].compressedEt();
+      // for (int i = 1; i < digi.size(); ++i)
+         // energy = std::max(energy, digi[i].compressedEt());
 
       float hcal = h->et(digi.SOI_compressedEt(), id.ietaAbs(), id.zside());
       float ecal = 0.;

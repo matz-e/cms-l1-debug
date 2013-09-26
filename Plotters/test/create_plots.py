@@ -25,6 +25,7 @@ do_reco = False
 use_ecal = True
 use_hcal = True
 tpd_thres = 0.5
+time_thres = -1.
 
 alt = False # alternative dataset
 aod = False
@@ -307,6 +308,10 @@ if raw and reco:
 
 process.caloTowerPlotter01 = process.caloTowerPlotter.clone()
 process.caloTowerPlotter01.cut = cms.untracked.double(1.)
+
+if time_thres > 0:
+    process.chainCmpPlotter.timecut = cms.untracked.double(time_thres)
+    process.recHitPlotter.timecut = cms.untracked.double(time_thres)
 
 process.recHitPlotter01 = process.recHitPlotter.clone()
 process.recHitPlotter01.cut = cms.untracked.double(1.0)

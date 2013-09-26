@@ -20,6 +20,7 @@
 
 
 // system include files
+#include <cmath>
 #include <memory>
 
 // user include files
@@ -155,6 +156,7 @@ class RecHitPlotter : public edm::EDAnalyzer, BasePlotter {
       TProfile* hcal_en_tot_vtx_e_;
 
       double cut_;
+      double timecut_;
       double shift_;
       bool transverse_;
 
@@ -172,6 +174,7 @@ RecHitPlotter::RecHitPlotter(const edm::ParameterSet& config) :
    edm::EDAnalyzer(),
    BasePlotter(config),
    cut_(config.getUntrackedParameter<double>("cut", -.1)),
+   timecut_(config.getUntrackedParameter<double>("timecut", -.1)),
    shift_(config.getUntrackedParameter<double>("timeShift", 0)),
    transverse_(config.getUntrackedParameter<bool>("transverse", false)),
    vertices_(config.getParameter<edm::InputTag>("vertices")),
@@ -470,6 +473,9 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          if (en < cut_)
             continue;
 
+         if (std::abs(hit->time()) > timecut_)
+            continue;
+
          ecal_e_tot_b += en;
          ecal_en_->Fill(en, weight);
          ecal_en_b_->Fill(en, weight);
@@ -520,6 +526,9 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
             en /= cosh(geo->getGeometry(id)->getPosition().eta());
 
          if (en < cut_)
+            continue;
+
+         if (std::abs(hit->time()) > timecut_)
             continue;
 
          ecal_e_tot_e += en;
@@ -600,6 +609,9 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
          }
 
          if (en < cut_)
+            continue;
+
+         if (std::abs(hit->time()) > timecut_)
             continue;
 
          hcal_en_->Fill(en, weight);
@@ -730,6 +742,9 @@ RecHitPlotter::analyze(const edm::Event& event, const edm::EventSetup& setup)
             en /= cosh(geo->getGeometry(id)->getPosition().eta());
 
          if (en < cut_)
+            continue;
+
+         if (std::abs(hit->time()) > timecut_)
             continue;
 
          ++hcal_hits_f;
