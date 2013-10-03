@@ -264,7 +264,7 @@ if raw and reemul:
     if not use_hcal:
         process.rctReEmulDigis.useHcal = cms.bool(False)
     if cleanhcal:
-        process.load('Debug.Plotters.HcalTrigPrimDigiCleaner_cfi')
+        process.load('Debug.Filters.HcalTrigPrimDigiCleaner_cfi')
         process.hcalTPDCleaner.input = cms.InputTag("hcalReEmulDigis")
         process.hcalTPDCleaner.threshold = cms.untracked.double(tpd_thres)
         process.rctReEmulDigis.hcalDigis = cms.VInputTag(cms.InputTag('hcalTPDCleaner', ''))

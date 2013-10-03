@@ -37,6 +37,8 @@
 
 #include "DataFormats/HcalDigi/interface/HcalDigiCollections.h"
 
+#include "Geometry/HcalTowerAlgo/interface/HcalTrigTowerGeometry.h"
+
 class HcalTrigPrimDigiCleaner : public edm::EDProducer {
    public:
       explicit HcalTrigPrimDigiCleaner(const edm::ParameterSet&);
@@ -92,6 +94,33 @@ HcalTrigPrimDigiCleaner::produce(edm::Event& event, const edm::EventSetup& setup
       return;
    }
 
+   HcalTrigTowerGeometry tpd_geo;
+   // setup.get<CaloGeometryRecord>().get(tpd_geo);
+
+   std::map<HcalDetId, double> tp_ets;
+
+   for (const auto& digi: *digis) {
+      HcalTrigTowerDetId id = digi.id();
+
+      float hcal = h->et(digi.SOI_compressedEt(), id.ietaAbs(), id.zside());
+      float ecal = 0.;
+      float et = 0.;
+
+      if (id.ietaAbs() > 28)
+         continue;
+
+      try {
+         et = r->JetMETTPGSum(ecal, hcal, id.ietaAbs());
+      } catch (...) {
+         edm::LogError("ChainCmpPlotter") << "Failed to convert "
+            << id.ietaAbs() << ", " << hcal << std::endl;
+         continue;
+      }
+
+      for (const auto& i: tpd_geo.detIds(id))
+         tp_ets[i] += et;
+   }
+
    std::auto_ptr<HcalTrigPrimDigiCollection> result(new HcalTrigPrimDigiCollection());
 
    for (const auto& digi: *digis) {
@@ -102,14 +131,12 @@ HcalTrigPrimDigiCleaner::produce(edm::Event& event, const edm::EventSetup& setup
          continue;
       }
 
-      float hcal = h->et(digi.SOI_compressedEt(), id.ietaAbs(), id.zside());
-      float ecal = 0.;
-      float et = r->JetMETTPGSum(ecal, hcal, id.ietaAbs());
-
-      // Trigger primitives and calo regions have energies measured in half
-      // GeV.
-      if (et * 0.5 >= threshold_)
-         result->push_back(digi);
+      for (const auto& i: tpd_geo.detIds(id)) {
+         if (tp_ets[i] >= threshold_) {
+            result->push_back(digi);
+            break;
+         }
+      }
    }
 
    event.put(result);
