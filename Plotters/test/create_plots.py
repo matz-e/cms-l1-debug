@@ -24,7 +24,6 @@ runera = ''
 do_reco = False
 use_ecal = True
 use_hcal = True
-tpd_thres = 0.5
 time_thres = -1.
 
 alt = False # alternative dataset
@@ -40,7 +39,6 @@ minbias = False
 zerobias = False
 trainback = False
 trainfront = False
-cleanhcal = False
 
 ifile = 'please set me'
 ofile = 'please set me'
@@ -88,6 +86,65 @@ def insert_before(sequence, module, reference):
                     return
 
 import FWCore.ParameterSet.Config as cms
+import FWCore.ParameterSet.SequenceTypes as seq
+
+class InsertBefore(object):
+    """Traverses a Sequence and insets an additional module before another one"""
+    def __init__(self, target, insert):
+        self.__target = target
+        self.__insert = insert
+        self.__found = False
+    def enter(self, visitee):
+        pass
+    def leave(self, visitee):
+        if isinstance(visitee, seq._ModuleSequenceType) and not self.__found:
+            try:
+                idx = visitee.index(self.__target)
+                visitee.insert(idx, self.__insert)
+                self.__found = True
+            except ValueError:
+                pass
+
+class TransformStartingWith(seq._MutatingSequenceVisitor):
+    """Traverses a Sequence and constructs a new sequence which contains an additional module before the specified one"""
+    def __init__(self, target, transform):
+        class _CloneOperator(object):
+            def __init__(self, target, transform):
+                self.__target = target
+                self.__transform = transform
+                self.__found = False
+                self.__names = {}
+            def __modify(self, mod):
+                newmod = self.__transform(mod)
+                for k, v in newmod.parameters_().items():
+                    if isinstance(v, cms.InputTag):
+                        if v.getModuleLabel() in self.__names:
+                            v.setModuleLabel(self.__names[v.getModuleLabel()])
+                            newmod.__setattr__(k, v)
+                    elif isinstance(v, cms.VInputTag):
+                        for (n, i) in enumerate(v):
+                            if isinstance(i, str):
+                                if i in self.__names:
+                                    v[n] = self.__names[i]
+                            elif isinstance(i, cms.InputTag):
+                                if i.getModuleLabel() in self.__names:
+                                    i.setModuleLabel(self.__names[i.getModuleLabel()])
+                                    v[n] = i
+                            else:
+                                raise ValueError("found unexpected " + type(i) + " in VInputTag")
+                        newmod.__setattr__(k, v)
+                self.__names[mod.label()] = newmod.label()
+                return newmod
+            def __call__(self, test):
+                if isinstance(test, cms.Sequence):
+                    return test
+                elif test == self.__target:
+                    self.__found = True
+                    return self.__modify(test)
+                elif self.__found:
+                    return self.__modify(test)
+                return None
+        super(type(self), self).__init__(_CloneOperator(target, transform))
 
 process = cms.Process('PlotPrep')
 process.load('FWCore.MessageLogger.MessageLogger_cfi')
@@ -222,6 +279,7 @@ else:
 if raw or do_reco:
     process.q *= process.RawToDigi
 
+process.load('Debug.Filters.HcalTrigPrimDigiCleaner_cfi')
 process.load('Debug.Plotters.ChainCmpPlotter_cfi')
 
 if raw and reemul:
@@ -254,7 +312,7 @@ if raw and reemul:
     # process.l1extraParticles.centralJetSource = cms.InputTag('gctReEmulDigis', 'cenJets')
     # process.l1extraParticles.tauJetSource = cms.InputTag('gctReEmulDigis', 'tauJets')
 
-    process.q = cms.Path()
+    # process.q = cms.Path()
     process.q *= process.HLTL1UnpackerSequence \
             * process.l1extraParticles \
             * process.l1GtUnpack 
@@ -263,16 +321,13 @@ if raw and reemul:
         process.rctReEmulDigis.useEcal = cms.bool(False)
     if not use_hcal:
         process.rctReEmulDigis.useHcal = cms.bool(False)
-    if cleanhcal:
-        process.load('Debug.Filters.HcalTrigPrimDigiCleaner_cfi')
-        process.hcalTPDCleaner.input = cms.InputTag("hcalReEmulDigis")
-        process.hcalTPDCleaner.threshold = cms.untracked.double(tpd_thres)
-        process.rctReEmulDigis.hcalDigis = cms.VInputTag(cms.InputTag('hcalTPDCleaner', ''))
 
-        insert_before(process.HLTL1UnpackerSequence,
-                process.hcalTPDCleaner, process.rctReEmulDigis)
+    process.reEmulHcalTPDCleaner = process.hcalTPDCleaner.clone()
+    process.reEmulHcalTPDCleaner.input = process.rctReEmulDigis.hcalDigis[0]
+    process.rctReEmulDigis.hcalDigis = cms.VInputTag(cms.InputTag('reEmulHcalTPDCleaner', ''))
 
-        process.chainCmpPlotter.cut = cms.untracked.double(tpd_thres)
+    inserter = InsertBefore(process.rctReEmulDigis, process.reEmulHcalTPDCleaner)
+    process.HLTL1UnpackerSequence.visit(inserter)
 
 if do_reco:
     process.q *= process.reconstruction
@@ -306,6 +361,11 @@ process.jetPlotter.l1Jets = cms.untracked.string('l1extraParticles')
 if raw and reco:
     process.digiPlotter.useVertices = cms.untracked.bool(True)
 
+process.triggerPrimitiveDigiPlotter.ecalDigis = cms.InputTag(
+        'ecalDigis', 'EcalTriggerPrimitives')
+
+process.hcalTPDCleaner.input = process.triggerPrimitiveDigiPlotter.hcalDigis
+
 process.caloTowerPlotter01 = process.caloTowerPlotter.clone()
 process.caloTowerPlotter01.cut = cms.untracked.double(1.)
 
@@ -319,15 +379,9 @@ process.recHitPlotter01.cut = cms.untracked.double(1.0)
 process.chainCmpPlotter01 = process.chainCmpPlotter.clone()
 process.chainCmpPlotter01.cut = cms.untracked.double(1.0)
 
-if cleanhcal:
-    process.cleanTrigPrimPlotter = process.triggerPrimitiveDigiPlotter.clone()
-    process.cleanTrigPrimPlotter.ecalDigis = cms.InputTag('ecalDigis', 'EcalTriggerPrimitives')
-    process.cleanTrigPrimPlotter.hcalDigis = cms.InputTag('hcalTPDCleaner', '')
-    process.p *= process.cleanTrigPrimPlotter
-
 process.reEmulTrigPrimPlotter = process.triggerPrimitiveDigiPlotter.clone()
 process.reEmulTrigPrimPlotter.ecalDigis = cms.InputTag('ecalDigis', 'EcalTriggerPrimitives')
-process.reEmulTrigPrimPlotter.hcalDigis = cms.InputTag('hcalReEmulDigis', '')
+process.reEmulTrigPrimPlotter.hcalDigis = cms.InputTag('reEmulHcalTPDCleaner', '')
 
 process.reEmulCaloRegionPlotter = process.caloRegionPlotter.clone()
 process.reEmulCaloRegionPlotter.caloRegions = cms.InputTag('rctReEmulDigis')
@@ -345,14 +399,7 @@ process.reEmulChainCmpPlotter.regions = cms.InputTag('rctReEmulDigis')
 process.reEmulChainCmpPlotter01 = process.chainCmpPlotter01.clone()
 process.reEmulChainCmpPlotter01.tpds = cms.InputTag('hcalReEmulDigis')
 process.reEmulChainCmpPlotter01.regions = cms.InputTag('rctReEmulDigis')
-process.reEmulChainCmpPlotter01.debug = cms.untracked.bool(True)
-
-process.triggerPrimitiveDigiPlotter.ecalDigis = cms.InputTag(
-        'ecalDigis', 'EcalTriggerPrimitives')
-# always need to reemulate MC, since TPs are not in RAW
-if mc:
-    process.triggerPrimitiveDigiPlotter.hcalDigis = cms.InputTag(
-            'hcalReEmulDigis', '')
+# process.reEmulChainCmpPlotter01.debug = cms.untracked.bool(True)
 
 # Plotter path assembly
 # =====================
@@ -367,13 +414,36 @@ if raw:
             process.triggerPrimitiveDigiPlotter * \
             process.caloRegionPlotter
 if raw and reemul:
-    process.p *= \
+    process.q *= \
             process.caloRegionCmpPlotter * \
             process.reEmulTrigPrimPlotter * \
             process.reEmulCaloRegionPlotter * \
             process.reEmulGctPlotter * \
             process.reEmulTrigPlotter * \
-            process.triggerPrimitiveDigiCmpPlotter
+            process.triggerPrimitiveDigiCmpPlotter * \
+            process.reEmulChainCmpPlotter * \
+            process.reEmulChainCmpPlotter01
+
+    def cut(suffix):
+        def clone(m):
+            new_m = m.clone()
+            new_m.setLabel(m.label() + suffix)
+            process.__setattr__(new_m.label(), new_m)
+            return new_m
+        return clone
+
+    clone1 = TransformStartingWith(process.reEmulHcalTPDCleaner, cut("Re01"))
+    process.q.visit(clone1)
+
+    process.reEmulHcalTPDCleanerRe01.threshold = cms.untracked.double(1.0)
+
+    clone2 = TransformStartingWith(process.reEmulHcalTPDCleaner, cut("No01"))
+    process.q.visit(clone2)
+    process.reEmulHcalTPDCleanerNo01.threshold = cms.untracked.double(1.0)
+    process.reEmulHcalTPDCleanerNo01.input = process.triggerPrimitiveDigiPlotter.hcalDigis
+
+    process.q += clone1.result()
+    process.q += clone2.result()
 
 if reco or do_reco:
     process.p *= \
@@ -386,10 +456,6 @@ if reco or do_reco:
 if (raw and reco) or do_reco:
     process.p *= process.chainCmpPlotter
     process.p *= process.chainCmpPlotter01
-
-    if reemul:
-        process.p *= process.reEmulChainCmpPlotter
-        process.p *= process.reEmulChainCmpPlotter01
 
 if mc:
     process.p *= process.genEnergyPlotter
@@ -423,13 +489,14 @@ if mc:
             def __init__(self):
                 self.weighted = []
             def enter(self, m):
-                rw = m.clone()
-                rw_label = m.label()
-                rw_label = 'reWeighted' + rw_label[0].upper() + rw_label[1:]
-                rw.setLabel(rw_label)
-                rw.weigh = cms.untracked.bool(True)
-                rw.weightFile = cms.untracked.string(wfile)
-                self.weighted.append(rw)
+                if "Plotter" in m.label():
+                    rw = m.clone()
+                    rw_label = m.label()
+                    rw_label = 'reWeighted' + rw_label[0].upper() + rw_label[1:]
+                    rw.setLabel(rw_label)
+                    rw.weigh = cms.untracked.bool(True)
+                    rw.weightFile = cms.untracked.string(wfile)
+                    self.weighted.append(rw)
             def leave(self, m):
                 pass
 
@@ -438,6 +505,12 @@ if mc:
         for m in visitor.weighted:
             process.__setattr__(m.label(), m)
             process.p *= m
+
+        visitor_re = CreateWeighted()
+        process.q.visit(visitor_re)
+        for m in visitor_re.weighted:
+            process.__setattr__(m.label(), m)
+            process.q *= m
 
 process.load("L1Trigger.GlobalTriggerAnalyzer.l1GtTrigReport_cfi")
 if reemul:
