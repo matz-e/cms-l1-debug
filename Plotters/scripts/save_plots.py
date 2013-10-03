@@ -658,7 +658,7 @@ def plot_directory(pattern, basepath, files, ranges=None):
                     continue
 
                 for (axis, proj) in projs.items():
-                    if 'calo' in basepath.lower() or basepath == 'cr':
+                    if 'calo' in basepath.lower() or basepath.startswith('cr'):
                         quant = 'Region'
                     elif 'digi' in basepath.lower() or 'trigprim' in basepath.lower() or basepath == 'tpd':
                         quant = 'Digi'
@@ -669,8 +669,7 @@ def plot_directory(pattern, basepath, files, ranges=None):
                     elif 'track' in basepath.lower():
                         quant = 'Track'
                     else:
-                        sys.stderr.write('Please add a quantity assignment for "{k}"\n.'.format(k=basepath))
-                        raise
+                        raise ValueError("No quanitity known for {0}".format(basepath))
 
                     nhists = []
                     for (h, n) in zip(map(proj, hists), map(proj, norm_hists)):
